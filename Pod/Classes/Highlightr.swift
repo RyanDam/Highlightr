@@ -38,7 +38,7 @@ open class Highlightr
      
      - returns: Highlightr instance.
      */
-    public init?()
+	public init?(defaultTheme: Theme? = nil)
     {
         jsContext = JSContext()
         jsContext.evaluateScript("var window = {};")
@@ -54,12 +54,15 @@ open class Highlightr
         {
             return nil
         }
-        
-        guard setTheme(to: "pojoaque") else
+
+		if let theme = defaultTheme
+		{
+			self.theme = theme
+		}
+        else if !setTheme(to: "pojoaque")
         {
             return nil
         }
-        
     }
     
     /**

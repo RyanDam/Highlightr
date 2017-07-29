@@ -49,10 +49,10 @@ open class Theme {
      
      - parameter themeString: Theme to use.
      */
-    init(themeString: String)
+	init(themeString: String, font: RPFont = RPFont(name: "Courier", size: 14)!)
     {
         theme = themeString
-        setCodeFont(RPFont(name: "Courier", size: 14)!)
+        setCodeFont(codeFont)
         strippedTheme = stripTheme(themeString)
         lightTheme = strippedThemeToString(strippedTheme)
         themeDict = strippedThemeToTheme(strippedTheme)

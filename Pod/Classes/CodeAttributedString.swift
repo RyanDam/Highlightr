@@ -36,14 +36,21 @@ open class CodeAttributedString : NSTextStorage
     let stringStorage = NSMutableAttributedString(string: "")
 
     /// Highlightr instace used internally for highlighting. Use this for configuring the theme.
-    open let highlightr = Highlightr()!
+	open let highlightr: Highlightr
     
     /// This object will be notified before and after the highlighting.
     open var highlightDelegate : HighlightDelegate?
 
     /// Initialize the CodeAttributedString
-    public override init()
+	public init(highlightr: Highlightr)
+	{
+		self.highlightr = highlightr
+		super.init()
+	}
+
+	public override init()
     {
+		self.highlightr = Highlightr()!
         super.init()
         setupListeners()
     }
@@ -51,6 +58,7 @@ open class CodeAttributedString : NSTextStorage
     /// Initialize the CodeAttributedString
     required public init?(coder aDecoder: NSCoder)
     {
+		self.highlightr = Highlightr()!
         super.init(coder: aDecoder)
         setupListeners()
     }
@@ -59,6 +67,7 @@ open class CodeAttributedString : NSTextStorage
     /// Initialize the CodeAttributedString
     required public init?(pasteboardPropertyList propertyList: Any, ofType type: String)
     {
+		self.highlightr = Highlightr()!
         super.init(pasteboardPropertyList: propertyList, ofType: type)
         setupListeners()
     }
