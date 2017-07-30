@@ -20,7 +20,10 @@ open class Highlightr
             themeChanged?(theme)
         }
     }
-    
+
+	/// Set to the last language detected, even if not using auto-detection.
+	open var lastDetectedLanguage: String? = nil
+
     /// This block will be called every time the theme changes.
     open var themeChanged : ((Theme) -> Void)?
     
@@ -95,7 +98,7 @@ open class Highlightr
      
      - returns: NSAttributedString with the detected code highlighted.
      */
-    open func highlight(_ code: String, as languageName: String? = nil, fastRender: Bool = true) -> NSAttributedString?
+	open func highlight(_ code: String, as languageName: String? = nil, fastRender: Bool = true) -> NSAttributedString?
     {
         var fixedCode = code.replacingOccurrences(of: "\\",with: "\\\\");
         fixedCode = fixedCode.replacingOccurrences(of: "\'",with: "\\\'");
@@ -106,18 +109,23 @@ open class Highlightr
         let command: String
         if let languageName = languageName
         {
-            command = String.init(format: "%@.highlight(\"%@\",\"%@\").value;", hljs, languageName, fixedCode)
+            command = String.init(format: "%@.highlight(\"%@\",\"%@\");", hljs, languageName, fixedCode)
         }else
         {
             // language auto detection
-            command = String.init(format: "%@.highlightAuto(\"%@\").value;", hljs, fixedCode)
+            command = String.init(format: "%@.highlightAuto(\"%@\");", hljs, fixedCode)
         }
         
-        let res = jsContext.evaluateScript(command)
-        guard var string = res!.toString() else
+        let resultArray = jsContext.evaluateScript(command)?.toDictionary()
+        guard var string = resultArray?["value"] as? String else
         {
             return nil
         }
+
+		if let language = resultArray?["language"] as? String
+		{
+			lastDetectedLanguage = language
+		}
         
         let returnString : NSAttributedString
         if(fastRender)

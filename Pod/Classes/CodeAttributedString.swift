@@ -27,6 +27,13 @@ import Foundation
      - parameter success: Bool
      */
     @objc optional func didHighlight(_ range:NSRange, success: Bool)
+
+	/**
+	Called after a range of the string was highlighted, and a language was successfully detected.
+
+	- parameter language:	String
+	*/
+	@objc optional func didDetectHighlightLanguage(_ language: String)
 }
 
 /// NSTextStorage subclass. Can be used to dynamically highlight code.
@@ -74,7 +81,7 @@ open class CodeAttributedString : NSTextStorage
     #endif
     
     /// Language syntax to use for highlighting. Providing nil will disable highlighting.
-    open var language : String?
+    open var language : LanguageMode = .automatic
     {
         didSet
         {
@@ -132,23 +139,35 @@ open class CodeAttributedString : NSTextStorage
     open override func processEditing()
     {
         super.processEditing()
-        if language != nil {
-            if self.editedMask.contains(.editedCharacters)
-            {
-                let string = (self.string as NSString)
-                let range = string.paragraphRange(for: editedRange)
-                highlight(range)
-            }
-        }
+        switch language
+		{
+		case .automatic, .enabled:
+			if self.editedMask.contains(.editedCharacters)
+			{
+				let string = (self.string as NSString)
+				let range = string.paragraphRange(for: editedRange)
+				highlight(range)
+			}
+		default:
+			break
+		}
     }
 
     func highlight(_ range: NSRange)
     {
-        if(language == nil)
-        {
-            return;
-        }
-        
+		let language: String?
+
+		switch self.language
+		{
+		case .disabled:
+			return
+		case .automatic:
+			language = nil
+		case .enabled(let definedLanguage):
+			language = definedLanguage
+		}
+
+
         if let highlightDelegate = highlightDelegate
         {
             let shouldHighlight : Bool? = highlightDelegate.shouldHighlight?(range)
@@ -158,12 +177,11 @@ open class CodeAttributedString : NSTextStorage
             }
         }
 
-        
         let string = (self.string as NSString)
         let line = string.substring(with: range)
         DispatchQueue.global().async
         {
-            let tmpStrg = self.highlightr.highlight(line, as: self.language!)
+            let tmpStrg = self.highlightr.highlight(line, as: language)
             DispatchQueue.main.async(execute: {
                 //Checks to see if this highlighting is still valid.
                 if((range.location + range.length) > self.stringStorage.length)
@@ -177,6 +195,11 @@ open class CodeAttributedString : NSTextStorage
                     self.highlightDelegate?.didHighlight?(range, success: false)
                     return;
                 }
+
+				if case .automatic = self.language, let detectedLanguage = self.highlightr.lastDetectedLanguage
+				{
+					self.highlightDelegate?.didDetectHighlightLanguage?(detectedLanguage)
+				}
                 
                 self.beginEditing()
                 tmpStrg?.enumerateAttributes(in: NSMakeRange(0, (tmpStrg?.length)!), options: [], using: { (attrs, locRange, stop) in
@@ -194,13 +217,28 @@ open class CodeAttributedString : NSTextStorage
         
     }
     
-    func setupListeners()
+    private func setupListeners()
     {
         highlightr.themeChanged =
             { _ in
                     self.highlight(NSMakeRange(0, self.stringStorage.length))
             }
     }
-    
-    
+}
+
+/// Language highlight configuration mode.
+public enum LanguageMode
+{
+	/// Disables highlighting completely.
+	case disabled
+
+	/// Uses automatic language detection.
+	///
+	/// When in this mode, `didDetectHighlightLanguage()` is called on the 
+	/// delegate when a language is detected.
+	case automatic
+
+	/// Force a specific langauge to be used. If the language is incorrect,
+	/// the behavior is undefined.
+	case enabled(String)
 }
