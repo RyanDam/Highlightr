@@ -72,7 +72,7 @@ open class Theme {
             }else
             {
                 let range = bkgColorHex.range(of: "#")
-                let str = String(bkgColorHex[(range?.lowerBound)!])
+                let str = String(bkgColorHex[(range?.lowerBound)!..<bkgColorHex.endIndex])
                 themeBackgroundColor = colorWithHexString(str)
             }
         }else
