@@ -145,19 +145,14 @@ open class CodeAttributedString : NSTextStorage
     {
         if(language == nil)
         {
-            return;
+            return
         }
         
-        if let highlightDelegate = highlightDelegate
-        {
-            let shouldHighlight : Bool? = highlightDelegate.shouldHighlight?(range)
-            if(shouldHighlight != nil && !shouldHighlight!)
-            {
-                return;
-            }
+        if let highlightDelegate = highlightDelegate, highlightDelegate.shouldHighlight?(range) == false
+		{
+			return
         }
 
-        
         let string = (self.string as NSString)
         let line = string.substring(with: range)
         DispatchQueue.global().async
