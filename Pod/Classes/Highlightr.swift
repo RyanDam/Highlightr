@@ -61,6 +61,10 @@ open class Highlightr
         }
         
     }
+
+	/// Attributes that are added to the entire string after parsing. This is a useful place to change
+	/// line height and other global features of the document.
+	open var documentAttributes: [NSAttributedStringKey: Any] = [:]
     
     /**
      Set the theme to use for highlighting.
@@ -116,7 +120,7 @@ open class Highlightr
             return nil
         }
         
-        let returnString : NSAttributedString
+        let returnString : NSMutableAttributedString
         if(fastRender)
         {
             returnString = processHTMLString(string)!
@@ -130,8 +134,12 @@ open class Highlightr
             
              let data = string.data(using: String.Encoding.utf8)!
              returnString = try! NSMutableAttributedString(data:data, options:opt, documentAttributes:nil)
-
         }
+
+		if documentAttributes.count > 0
+		{
+			returnString.addAttributes(documentAttributes, range: NSMakeRange(0, returnString.length))
+		}
         
         return returnString
     }
@@ -165,7 +173,7 @@ open class Highlightr
     }
     
     //Private & Internal
-    fileprivate func processHTMLString(_ string: String) -> NSAttributedString?
+    fileprivate func processHTMLString(_ string: String) -> NSMutableAttributedString?
     {
         let scanner = Scanner(string: string)
         scanner.charactersToBeSkipped = nil
