@@ -18,7 +18,7 @@ import Foundation
      
      - returns: Bool
      */
-    @objc optional func shouldHighlight(_ range:NSRange) -> Bool
+    @objc optional func shouldHighlight(_ range: NSRange) -> Bool
     
     /**
      Called after a range of the string was highlighted, if there was an error **success** will be *false*.
@@ -26,7 +26,7 @@ import Foundation
      - parameter range:   NSRange
      - parameter success: Bool
      */
-    @objc optional func didHighlight(_ range:NSRange, success: Bool)
+    @objc optional func didHighlight(_ range: NSRange, success: Bool)
 }
 
 /// NSTextStorage subclass. Can be used to dynamically highlight code.
@@ -40,6 +40,9 @@ open class CodeAttributedString : NSTextStorage
     
     /// This object will be notified before and after the highlighting.
     open var highlightDelegate : HighlightDelegate?
+
+	/// Automatically updates highlight on text change.
+	open var highlightOnChange: Bool = true
 
     /// Initialize the CodeAttributedString
     public override init()
@@ -131,7 +134,8 @@ open class CodeAttributedString : NSTextStorage
     open override func processEditing()
     {
         super.processEditing()
-        if language != nil {
+        if language != nil, highlightOnChange
+		{
             if self.editedMask.contains(.editedCharacters)
             {
                 let string = (self.string as NSString)
@@ -143,7 +147,7 @@ open class CodeAttributedString : NSTextStorage
 
     func highlight(_ range: NSRange)
     {
-        if(language == nil)
+        if language == nil
         {
             return
         }
@@ -153,12 +157,15 @@ open class CodeAttributedString : NSTextStorage
 			return
         }
 
-        let string = (self.string as NSString)
+        let string = self.string as NSString
         let line = string.substring(with: range)
-        DispatchQueue.global().async
+
+		DispatchQueue.global(qos: .userInitiated).async
         {
             let tmpStrg = self.highlightr.highlight(line, as: self.language!)
-            DispatchQueue.main.async(execute: {
+
+			DispatchQueue.main.async
+			{
                 //Checks to see if this highlighting is still valid.
                 if((range.location + range.length) > self.stringStorage.length)
                 {
@@ -182,7 +189,7 @@ open class CodeAttributedString : NSTextStorage
                 self.endEditing()
                 self.edited(NSTextStorageEditActions.editedAttributes, range: range, changeInLength: 0)
                 self.highlightDelegate?.didHighlight?(range, success: true)
-            })
+            }
             
         }
         
