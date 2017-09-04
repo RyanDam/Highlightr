@@ -145,7 +145,7 @@ open class CodeAttributedString : NSTextStorage
         }
     }
 
-    func highlight(_ range: NSRange)
+    open func highlight(_ range: NSRange)
     {
         if language == nil
         {
