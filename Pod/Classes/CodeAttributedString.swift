@@ -162,7 +162,11 @@ open class CodeAttributedString : NSTextStorage
 
 		DispatchQueue.global(qos: .userInitiated).async
         {
-            let tmpStrg = self.highlightr.highlight(line, as: self.language!)
+            guard let highlightedString = self.highlightr.highlight(line, as: self.language!) else
+			{
+				self.highlightDelegate?.didHighlight?(range, success: false)
+				return
+			}
 
 			DispatchQueue.main.async
 			{
@@ -173,21 +177,24 @@ open class CodeAttributedString : NSTextStorage
                     return;
                 }
                 
-                if(tmpStrg?.string != self.stringStorage.attributedSubstring(from: range).string)
+                if(highlightedString.string != self.stringStorage.attributedSubstring(from: range).string)
                 {
                     self.highlightDelegate?.didHighlight?(range, success: false)
                     return;
                 }
                 
                 self.beginEditing()
-                tmpStrg?.enumerateAttributes(in: NSMakeRange(0, (tmpStrg?.length)!), options: [], using: { (attrs, locRange, stop) in
-                    var fixedRange = NSMakeRange(range.location+locRange.location, locRange.length)
-                    fixedRange.length = (fixedRange.location + fixedRange.length < string.length) ? fixedRange.length : string.length-fixedRange.location
-                    fixedRange.length = (fixedRange.length >= 0) ? fixedRange.length : 0
-                    self.stringStorage.setAttributes(attrs, range: fixedRange)
-                })
+
+                highlightedString.enumerateAttributes(in: NSMakeRange(0, (highlightedString.length)),
+                                                      options: [])
+					{
+						(attrs, locRange, stop) in
+
+						self.stringStorage.setAttributes(attrs, range: NSMakeRange(range.location + locRange.location, locRange.length))
+					}
+
                 self.endEditing()
-                self.edited(NSTextStorageEditActions.editedAttributes, range: range, changeInLength: 0)
+
                 self.highlightDelegate?.didHighlight?(range, success: true)
             }
             
