@@ -171,44 +171,43 @@ open class CodeAttributedString : NSTextStorage
 			DispatchQueue.main.async
 			{
                 //Checks to see if this highlighting is still valid.
-                if((range.location + range.length) > self.stringStorage.length)
+                if ((range.location + range.length) > self.stringStorage.length)
                 {
                     self.highlightDelegate?.didHighlight?(range, success: false)
                     return;
                 }
                 
-                if(highlightedString.string != self.stringStorage.attributedSubstring(from: range).string)
+                if (highlightedString.string != self.stringStorage.attributedSubstring(from: range).string)
                 {
                     self.highlightDelegate?.didHighlight?(range, success: false)
                     return;
                 }
                 
-                self.beginEditing()
+				self.beginEditing()
 
-                highlightedString.enumerateAttributes(in: NSMakeRange(0, (highlightedString.length)),
-                                                      options: [])
-					{
-						(attrs, locRange, stop) in
+				let fullRange = NSMakeRange(0, (highlightedString.length))
 
-						self.stringStorage.setAttributes(attrs, range: NSMakeRange(range.location + locRange.location, locRange.length))
-					}
+				highlightedString.enumerateAttributes(in: fullRange, options: [])
+				{
+					(attrs, locRange, stop) in
 
-                self.endEditing()
+					self.setAttributes(attrs, range: NSMakeRange(range.location + locRange.location, locRange.length))
+				}
 
-                self.highlightDelegate?.didHighlight?(range, success: true)
+				self.fixAttributes(in: NSMakeRange(range.location + fullRange.location, fullRange.length))
+				self.endEditing()
+
+				self.highlightDelegate?.didHighlight?(range, success: true)
             }
-            
         }
-        
     }
     
     func setupListeners()
     {
         highlightr.themeChanged =
-            { _ in
-                    self.highlight(NSMakeRange(0, self.stringStorage.length))
+            {
+				_ in
+				self.highlight(NSMakeRange(0, self.stringStorage.length))
             }
-    }
-    
-    
+    }   
 }
