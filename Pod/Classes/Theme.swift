@@ -43,6 +43,9 @@ open class Theme {
     
     /// Default background color for the current theme.
     open var themeBackgroundColor : RPColor!
+
+	/// Default color for normal text for the current theme.
+	open var themeTextColor : RPColor!
     
     /**
      Initialize the theme with the given theme name.
@@ -56,31 +59,14 @@ open class Theme {
         strippedTheme = stripTheme(themeString)
         lightTheme = strippedThemeToString(strippedTheme)
         themeDict = strippedThemeToTheme(strippedTheme)
-        var bkgColorHex = strippedTheme[".hljs"]?["background"]
-        if(bkgColorHex == nil)
-        {
-            bkgColorHex = strippedTheme[".hljs"]?["background-color"]
-        }
-        if let bkgColorHex = bkgColorHex
-        {
-            if(bkgColorHex == "white")
-            {
-                themeBackgroundColor = RPColor(white: 1, alpha: 1)
-            }else if(bkgColorHex == "black")
-            {
-                themeBackgroundColor = RPColor(white: 0, alpha: 1)
-            }else
-            {
-                let range = bkgColorHex.range(of: "#")
-                let str = String(bkgColorHex[(range?.lowerBound)!..<bkgColorHex.endIndex])
-                themeBackgroundColor = colorWithHexString(str)
-            }
-        }else
-        {
-            themeBackgroundColor = RPColor.white
-        }
+
+		themeBackgroundColor = colorWithHexString(strippedTheme[".hljs"]?["background"]
+													?? strippedTheme[".hljs"]?["background-color"]
+													?? "white")
+
+		themeTextColor = colorWithHexString(strippedTheme[".hljs"]?["color"] ?? "black")
     }
-    
+
     /**
      Changes the theme font. This will try to automatically populate the codeFont, boldCodeFont and italicCodeFont properties based on the provided font.
      
