@@ -120,11 +120,12 @@ open class Theme {
         
         if styleList.count > 0
         {
-            var attrs = [NSAttributedStringKey:AnyObject]()
-            attrs[.font] = codeFont
-            for style in styleList
+			var attrs: [NSAttributedStringKey:AnyObject] = [.font: codeFont]
+
+			for style in styleList
             {
-                if let themeStyle = themeDict[style]
+				// This is for sanity reasons. We don't want to query for values that "don't make sense".
+                if style.hasPrefix("hljs"), let themeStyle = themeDict[style]
                 {
                     for (attrName, attrValue) in themeStyle
                     {
@@ -133,11 +134,11 @@ open class Theme {
                 }
             }
             
-            returnString = NSAttributedString(string: string, attributes:attrs )
+            returnString = NSAttributedString(string: string, attributes:attrs)
         }
         else
         {
-            returnString = NSAttributedString(string: string, attributes:[NSAttributedStringKey.font:codeFont] )
+            returnString = NSAttributedString(string: string, attributes: [.font: codeFont])
         }
         
         return returnString
