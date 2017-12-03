@@ -182,7 +182,18 @@ open class CodeAttributedString : NSTextStorage
 
 		effectiveLanguage = highlightLanguage
 
-		return NSMakeRange(startLocation, endLocation - startLocation)
+		let boundaryRange = NSMakeRange(startLocation, endLocation - startLocation)
+
+		// It makes no sense to re-highlight the whole text. In this case, the paragraph range should work, as it seems
+		// this file only contains one language.
+		if boundaryRange == NSMakeRange(0, stringStorage.length)
+		{
+			return (stringStorage.string as NSString).paragraphRange(for: range)
+		}
+		else
+		{
+			return boundaryRange
+		}
 	}
 
 	/// Highlights the parameter range.
@@ -200,12 +211,21 @@ open class CodeAttributedString : NSTextStorage
 			return
         }
 
-        let string = self.string as NSString
-
 		DispatchQueue.global(qos: .userInitiated).async
         {
+			let string = self.string as NSString
 			var language: String = self.language ?? ""
-			let highlightRange = self.languageBoundaries(for: range, effectiveLanguage: &language)
+			let highlightRange: NSRange
+
+			if range == NSMakeRange(0, string.length)
+			{
+				highlightRange = range
+			}
+			else
+			{
+				highlightRange = self.languageBoundaries(for: range, effectiveLanguage: &language)
+			}
+
 			let line = string.substring(with: highlightRange)
 
 			guard language != "" else
