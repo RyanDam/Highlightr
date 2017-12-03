@@ -205,19 +205,14 @@ open class Highlightr
 				{
 					// We have detected a span with a language-name class. To aid when highlighting changed text,
 					// we add a custom attribute to the string with the language name.
-					let mutableString = attrScannedString.mutableCopy() as! NSMutableAttributedString
-					mutableString.addAttribute(Highlightr.HighlightLanguageStart,
-											   value: language, range: NSMakeRange(0, 1))
-
-					resultString.append(mutableString)
+					attrScannedString.addAttribute(Highlightr.HighlightLanguageStart,
+												   value: language, range: NSMakeRange(0, 1))
 
 					// To avoid setting this attribute all over the place, we only add it as soon as we detect it.
 					languageName = nil
 				}
-				else
-				{
-					resultString.append(attrScannedString)
-				}
+
+				resultString.append(attrScannedString)
 
 				if ended
                 {

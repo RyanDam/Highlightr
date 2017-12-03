@@ -114,9 +114,9 @@ open class Theme {
         }
     }
     
-    internal func applyStyleToString(_ string: String, styleList: [String]) -> NSAttributedString
+    internal func applyStyleToString(_ string: String, styleList: [String]) -> NSMutableAttributedString
     {
-        let returnString : NSAttributedString
+        let returnString : NSMutableAttributedString
         
         if styleList.count > 0
         {
@@ -134,11 +134,11 @@ open class Theme {
                 }
             }
             
-            returnString = NSAttributedString(string: string, attributes:attrs)
+            returnString = NSMutableAttributedString(string: string, attributes:attrs)
         }
         else
         {
-            returnString = NSAttributedString(string: string, attributes: [.font: codeFont])
+            returnString = NSMutableAttributedString(string: string, attributes: [.font: codeFont])
         }
         
         return returnString
