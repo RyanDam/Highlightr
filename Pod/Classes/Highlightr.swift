@@ -12,6 +12,8 @@ import JavaScriptCore
 /// Utility class for generating a highlighted NSAttributedString from a String.
 open class Highlightr
 {
+	public static let HighlightLanguageStart = NSAttributedStringKey(rawValue: "HighlightLanguageStart")
+
     /// Returns the current Theme.
     open var theme : Theme!
     {
@@ -96,7 +98,7 @@ open class Highlightr
      
      - returns: NSAttributedString with the detected code highlighted.
      */
-    open func highlight(_ code: String, as languageName: String? = nil, fastRender: Bool = true) -> NSAttributedString?
+    open func highlight(_ code: String, as languageName: String? = nil, fastRender: Bool = true) -> NSMutableAttributedString?
     {
         var fixedCode = code.replacingOccurrences(of: "\\",with: "\\\\");
         fixedCode = fixedCode.replacingOccurrences(of: "\'",with: "\\\'");
@@ -108,7 +110,8 @@ open class Highlightr
         if let languageName = languageName
         {
             command = String.init(format: "%@.highlight(\"%@\",\"%@\").value;", hljs, languageName, fixedCode)
-        }else
+        }
+		else
         {
             // language auto detection
             command = String.init(format: "%@.highlightAuto(\"%@\").value;", hljs, fixedCode)
@@ -121,10 +124,11 @@ open class Highlightr
         }
         
         let returnString : NSMutableAttributedString
-        if(fastRender)
+        if (fastRender)
         {
-            returnString = processHTMLString(string)!
-        }else
+            returnString = processHTMLString(string, defaultLanguage: languageName)
+        }
+		else
         {
         	string = "<style>"+theme.lightTheme+"</style><pre><code class=\"hljs\">"+string+"</code></pre>"
 			let opt: [NSAttributedString.DocumentReadingOptionKey : Any] = [
@@ -173,13 +177,14 @@ open class Highlightr
     }
     
     //Private & Internal
-    fileprivate func processHTMLString(_ string: String) -> NSMutableAttributedString?
+	fileprivate func processHTMLString(_ string: String, defaultLanguage: String?) -> NSMutableAttributedString
     {
         let scanner = Scanner(string: string)
         scanner.charactersToBeSkipped = nil
         var scannedString: NSString?
         let resultString = NSMutableAttributedString(string: "")
         var propStack = ["hljs"]
+		var languageName: String? = nil
         
         while !scanner.isAtEnd
         {
@@ -192,10 +197,29 @@ open class Highlightr
                 }
             }
             
-            if scannedString != nil && scannedString!.length > 0 {
+            if scannedString != nil && scannedString!.length > 0
+			{
                 let attrScannedString = theme.applyStyleToString(scannedString! as String, styleList: propStack)
-                resultString.append(attrScannedString)
-                if ended
+
+				if let language = languageName
+				{
+					// We have detected a span with a language-name class. To aid when highlighting changed text,
+					// we add a custom attribute to the string with the language name.
+					let mutableString = attrScannedString.mutableCopy() as! NSMutableAttributedString
+					mutableString.addAttribute(Highlightr.HighlightLanguageStart,
+											   value: language, range: NSMakeRange(0, 1))
+
+					resultString.append(mutableString)
+
+					// To avoid setting this attribute all over the place, we only add it as soon as we detect it.
+					languageName = nil
+				}
+				else
+				{
+					resultString.append(attrScannedString)
+				}
+
+				if ended
                 {
                     continue
                 }
@@ -210,13 +234,34 @@ open class Highlightr
                 scanner.scanLocation += (spanStart as NSString).length
                 scanner.scanUpTo(spanStartClose, into:&scannedString)
                 scanner.scanLocation += (spanStartClose as NSString).length
-                propStack.append(scannedString! as String)
+
+				if let property: String = scannedString as String?
+				{
+					propStack.append(property)
+
+					if !property.hasPrefix("hljs"), property != "undefined"
+					{
+						// If the class name doesn't have the "hsjs" prefix, it is a language name, like "php".
+						languageName = property
+					}
+				}
             }
             else if(nextChar == "/")
             {
                 scanner.scanLocation += (spanEnd as NSString).length
-                propStack.removeLast()
-            }else
+                let removed = propStack.removeLast()
+
+				if !removed.hasPrefix("hljs"), removed != "undefined"
+				{
+					// We need to stop the language lookup from getting into the just-closed sub-language block.
+					let previousLanguage = propStack.reversed().first(where: {!$0.hasPrefix("hljs")})
+											?? defaultLanguage
+											?? ""
+					
+					languageName = previousLanguage
+				}
+            }
+			else
             {
                 let attrScannedString = theme.applyStyleToString("<", styleList: propStack)
                 resultString.append(attrScannedString)
