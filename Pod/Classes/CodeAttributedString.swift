@@ -195,24 +195,24 @@ open class CodeAttributedString : NSTextStorage
 	/// pre-processor tags and other markup that breaks highlighting otherwise (such as PHP's <?php ?> tags).
     open func highlight(_ range: NSRange)
     {
-		var language: String = self.language ?? ""
-       	let highlightRange = languageBoundaries(for: range, effectiveLanguage: &language)
-
-		guard language != "" else
-		{
-			return
-		}
-        
-        if let highlightDelegate = highlightDelegate, highlightDelegate.shouldHighlight?(highlightRange) == false
+        if let highlightDelegate = highlightDelegate, highlightDelegate.shouldHighlight?(range) == false
 		{
 			return
         }
 
         let string = self.string as NSString
-        let line = string.substring(with: highlightRange)
 
 		DispatchQueue.global(qos: .userInitiated).async
         {
+			var language: String = self.language ?? ""
+			let highlightRange = self.languageBoundaries(for: range, effectiveLanguage: &language)
+			let line = string.substring(with: highlightRange)
+
+			guard language != "" else
+			{
+				return
+			}
+
             guard let highlightedString = self.highlightr.highlight(line, as: language) else
 			{
 				self.highlightDelegate?.didHighlight?(highlightRange, success: false)
@@ -246,20 +246,8 @@ open class CodeAttributedString : NSTextStorage
                     self.highlightDelegate?.didHighlight?(highlightRange, success: false)
                     return;
                 }
-                
-				self.beginEditing()
 
-				let fullRange = NSMakeRange(0, (highlightedString.length))
-
-				highlightedString.enumerateAttributes(in: fullRange, options: [])
-				{
-					(attrs, locRange, stop) in
-
-					self.setAttributes(attrs, range: locRange.offsetting(by: highlightRange.location))
-				}
-
-				self.fixAttributes(in: fullRange.offsetting(by: highlightRange.location))
-				self.endEditing()
+				self.stringStorage.replaceCharacters(in: highlightRange, with: highlightedString)
 
 				self.highlightDelegate?.didHighlight?(highlightRange, success: true)
             }
