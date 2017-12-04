@@ -10,12 +10,10 @@ import Foundation
 import JavaScriptCore
 
 /// Utility class for generating a highlighted NSAttributedString from a String.
-open class Highlightr
+@objc open class Highlightr: NSObject
 {
-	public static let HighlightLanguageStart = NSAttributedStringKey(rawValue: "HighlightLanguageStart")
-
     /// Returns the current Theme.
-    open var theme : Theme!
+    @objc open var theme : Theme!
     {
         didSet
         {
@@ -24,7 +22,7 @@ open class Highlightr
     }
     
     /// This block will be called every time the theme changes.
-    open var themeChanged : ((Theme) -> Void)?
+    @objc open var themeChanged : ((Theme) -> Void)?
     
     fileprivate let jsContext : JSContext
     fileprivate let hljs = "window.hljs"
@@ -40,43 +38,43 @@ open class Highlightr
      
      - returns: Highlightr instance.
      */
-    public init?()
+	@objc public override init()
     {
         jsContext = JSContext()
         jsContext.evaluateScript("var window = {};")
         bundle = Bundle(for: Highlightr.self)
         guard let hgPath = bundle.path(forResource: "highlight.min", ofType: "js") else
         {
-            return nil
+            abort()
         }
         
         let hgJs = try! String.init(contentsOfFile: hgPath)
         let value = jsContext.evaluateScript(hgJs)
         if !(value?.toBool())!
         {
-            return nil
+            abort()
         }
-        
+
+		super.init()
+
         guard setTheme(to: "pojoaque") else
         {
-            return nil
+            abort()
         }
         
     }
 
 	/// Attributes that are added to the entire string after parsing. This is a useful place to change
 	/// line height and other global features of the document.
-	open var documentAttributes: [NSAttributedStringKey: Any] = [:]
+	@objc open var documentAttributes: [NSAttributedStringKey: Any] = [:]
     
     /**
      Set the theme to use for highlighting.
-     
-     - parameter to: Theme name
-     
+	
      - returns: true if it was possible to set the given theme, false otherwise
      */
     @discardableResult
-    open func setTheme(to name: String) -> Bool
+	@objc(setThemeToName:) open func setTheme(to name: String) -> Bool
     {
         guard let defTheme = bundle.path(forResource: name+".min", ofType: "css") else
         {
@@ -98,7 +96,7 @@ open class Highlightr
      
      - returns: NSAttributedString with the detected code highlighted.
      */
-    open func highlight(_ code: String, as languageName: String? = nil, fastRender: Bool = true) -> NSMutableAttributedString?
+    @objc open func highlight(_ code: String, as languageName: String? = nil, fastRender: Bool = true) -> NSMutableAttributedString?
     {
         var fixedCode = code.replacingOccurrences(of: "\\",with: "\\\\");
         fixedCode = fixedCode.replacingOccurrences(of: "\'",with: "\\\'");
@@ -153,7 +151,7 @@ open class Highlightr
      
      - returns: Array of Strings
      */
-    open func availableThemes() -> [String]
+    @objc open func availableThemes() -> [String]
     {
         let paths = bundle.paths(forResourcesOfType: "css", inDirectory: nil) as [NSString]
         var result = [String]()
@@ -169,7 +167,7 @@ open class Highlightr
      
      - returns: Array of Strings
      */
-    open func supportedLanguages() -> [String]
+    @objc open func supportedLanguages() -> [String]
     {
         let command =  String.init(format: "%@.listLanguages();", hljs)
         let res = jsContext.evaluateScript(command)
@@ -205,7 +203,7 @@ open class Highlightr
 				{
 					// We have detected a span with a language-name class. To aid when highlighting changed text,
 					// we add a custom attribute to the string with the language name.
-					attrScannedString.addAttribute(Highlightr.HighlightLanguageStart,
+					attrScannedString.addAttribute(.HighlightLanguageStart,
 												   value: language, range: NSMakeRange(0, 1))
 
 					// To avoid setting this attribute all over the place, we only add it as soon as we detect it.

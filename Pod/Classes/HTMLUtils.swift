@@ -264,7 +264,8 @@ private let characterEntities : [String: Character] = [
     
 ]
 
-internal class HTMLUtils {
+@objc
+internal class HTMLUtils: NSObject {
     
     // Decode the HTML character entity to the corresponding
     // Unicode character, return `nil` for invalid input.

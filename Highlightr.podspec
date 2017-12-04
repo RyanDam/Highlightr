@@ -26,7 +26,7 @@ Pod::Spec.new do |s|
 
   s.requires_arc = true
 
-  s.source_files = 'Pod/Classes/**/*.{swift}'
+  s.source_files = 'Pod/Classes/**/*.{swift,h,m}'
 
   s.resources  = ['Pod/Assets/Highlighter/highlight.min.js', 'Pod/Assets/styles/*.css']
 
