@@ -208,7 +208,9 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 		if (highlightedString == nil)
 		{
-			[_highlightDelegate didHighlightRange:range success:NO];
+			dispatch_async(dispatch_get_main_queue(), ^{
+				[_highlightDelegate didHighlightRange:range success:NO];
+			});
 			return;
 		}
 		else if (usingLanguageBoundaries && [highlightedString length] > 0 &&
@@ -237,6 +239,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			}
 
 			[_stringStorage replaceCharactersInRange:highlightRange withAttributedString:highlightedString];
+			[_highlightDelegate didHighlightRange:range success:YES];
 		});
 	});
 }
