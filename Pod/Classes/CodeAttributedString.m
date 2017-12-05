@@ -239,6 +239,8 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			}
 
 			[_stringStorage replaceCharactersInRange:highlightRange withAttributedString:highlightedString];
+			[self edited:NSTextStorageEditedAttributes range:highlightRange changeInLength:0];
+
 			[_highlightDelegate didHighlightRange:range success:YES];
 		});
 	});
