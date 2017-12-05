@@ -208,9 +208,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 		if (highlightedString == nil)
 		{
-			dispatch_async(dispatch_get_main_queue(), ^{
-				[_highlightDelegate didHighlightRange:range success:NO];
-			});
+			[self sendDelegateMethodDidHighlightRange:range success:NO];
 			return;
 		}
 		else if (usingLanguageBoundaries && [highlightedString length] > 0 &&
@@ -228,22 +226,32 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			// Checks if this highlighting is still valid.
 			if (NSMaxRange(highlightRange) > [_stringStorage length])
 			{
-				[_highlightDelegate didHighlightRange:range success:NO];
+				[self sendDelegateMethodDidHighlightRange:range success:NO];
 				return;
 			}
 
 			if (![highlightedString.string isEqualToString:[[_stringStorage attributedSubstringFromRange:highlightRange] string]])
 			{
-				[_highlightDelegate didHighlightRange:range success:NO];
+				[self sendDelegateMethodDidHighlightRange:range success:NO];
 				return;
 			}
 
 			[_stringStorage replaceCharactersInRange:highlightRange withAttributedString:highlightedString];
 			[self edited:NSTextStorageEditedAttributes range:highlightRange changeInLength:0];
 
-			[_highlightDelegate didHighlightRange:range success:YES];
+			[self sendDelegateMethodDidHighlightRange:range success:YES];
 		});
 	});
+}
+
+- (void)sendDelegateMethodDidHighlightRange:(NSRange)range success:(BOOL)success
+{
+	if (_highlightDelegate && [_highlightDelegate respondsToSelector:@selector(didHighlightRange:success:)])
+	{
+		dispatch_async(dispatch_get_main_queue(), ^{
+			[_highlightDelegate didHighlightRange:range success:success];
+		});
+	}
 }
 
 @end
