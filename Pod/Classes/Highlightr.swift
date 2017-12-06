@@ -102,7 +102,7 @@ import JavaScriptCore
         fixedCode = fixedCode.replacingOccurrences(of: "\'",with: "\\\'");
         fixedCode = fixedCode.replacingOccurrences(of: "\"", with:"\\\"");
         fixedCode = fixedCode.replacingOccurrences(of: "\n", with:"\\n");
-        fixedCode = fixedCode.replacingOccurrences(of: "\r", with:"");
+        fixedCode = fixedCode.replacingOccurrences(of: "\r", with:"\\r");
 
         let command: String
         if let languageName = languageName
