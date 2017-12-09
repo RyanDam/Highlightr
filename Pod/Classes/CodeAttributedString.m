@@ -143,7 +143,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	 }];
 
 	[_stringStorage enumerateAttribute:HighlightLanguageStart
-							   inRange:NSMakeRange(NSMaxRange(range) - 1, endLocation - NSMaxRange(range))
+							   inRange:NSMakeRange(range.location == 0 ? 0 : NSMaxRange(range) - 1, endLocation - NSMaxRange(range))
 							   options:0
 							usingBlock:^(id  _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
 	 {
@@ -203,8 +203,9 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			usingLanguageBoundaries = YES;
 		}
 
-		if ([language isEqualToString:@""])
+		if (highlightRange.length == 0 || [language isEqualToString:@""])
 		{
+			[self sendDelegateMethodDidHighlightRange:range success:YES];
 			return;
 		}
 
