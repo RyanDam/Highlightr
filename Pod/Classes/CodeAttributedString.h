@@ -40,4 +40,7 @@ extern const _Nonnull NSAttributedStringKey HighlightLanguageStart;
 /// Automatically updates highlight on text change.
 @property BOOL highlightOnChange;
 
+/// Informs the code storage that highlighting of the entire contents are necessary.
+- (void)setNeedsHighlight;
+
 @end

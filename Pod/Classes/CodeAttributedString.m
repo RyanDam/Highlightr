@@ -88,6 +88,11 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	}
 }
 
+- (void)setNeedsHighlight
+{
+	[self highlightRange:NSMakeRange(0, [self length])];
+}
+
 #pragma mark - Accessors
 
 - (void)setLanguage:(NSString *)language
