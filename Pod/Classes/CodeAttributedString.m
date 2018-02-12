@@ -52,8 +52,10 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 - (void)initializeMembers
 {
-	_highlightr = [[Highlightr alloc] init];
+	// By using a NSTextStorage object, the CodeAttributedString class behaves simply as a router, and also provides a ginormous
+	// performance enhancement compared to using something like a NSMutableAttributedString.
 	_stringStorage = [[NSTextStorage alloc] initWithString:@""];
+	_highlightr = [[Highlightr alloc] init];
 }
 
 - (NSString *)string
