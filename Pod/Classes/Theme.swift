@@ -53,7 +53,7 @@ open class Theme: NSObject {
      
      - parameter themeString: Theme to use.
      */
-    init(themeString: String)
+	public init(themeString: String)
     {
 		theme = themeString
 
