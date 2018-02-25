@@ -211,6 +211,13 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			return;
 		}
 
+		// Checks if this highlighting is still valid.
+		if (NSMaxRange(highlightRange) > [string length])
+		{
+			[self sendDelegateMethodDidHighlightRange:range success:NO];
+			return;
+		}
+
 		NSString *line = [string substringWithRange:highlightRange];
 		NSMutableAttributedString *highlightedString = [_highlightr highlight:line as:language fastRender:YES];
 
