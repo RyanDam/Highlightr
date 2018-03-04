@@ -6,6 +6,7 @@
 //
 
 #import "CodeAttributedString.h"
+#import "HighlightHints.h"
 #import <Highlightr/Highlightr-Swift.h>
 
 const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguageStart";
@@ -131,6 +132,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 		highlightLanguage = @"";
 	}
 
+	// Search for the nearest language boundary before the edited range.
 	[_stringStorage enumerateAttribute:HighlightLanguageStart
 							   inRange:NSMakeRange(0, range.location)
 							   options:NSAttributedStringEnumerationReverse
@@ -144,6 +146,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 		 }
 	 }];
 
+	// Search for the nearest language boundary after the edited range.
 	[_stringStorage enumerateAttribute:HighlightLanguageStart
 							   inRange:NSMakeRange(range.location == 0 ? 0 : NSMaxRange(range) - 1, endLocation - NSMaxRange(range))
 							   options:0
@@ -159,12 +162,13 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	*effectiveLangauge = highlightLanguage;
 
 	NSRange boundaryRange = NSMakeRange(startLocation, endLocation - startLocation);
+	NSString *string = [_stringStorage string];
 
 	// It makes no sense to re-highlight the whole text. In this case, the paragraph range should work, as it seems
 	// this file only contains one language.
-	if (NSEqualRanges(boundaryRange, NSMakeRange(0, [_stringStorage length])))
+	if (NSEqualRanges(boundaryRange, NSMakeRange(0, [string length])))
 	{
-		return [[_stringStorage string] paragraphRangeForRange:range];
+		return [HighlightHints highlightRangeFor:range inString:string forLanguage:[_language lowercaseString]];
 	}
 	else
 	{
@@ -226,8 +230,9 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			[self sendDelegateMethodDidHighlightRange:range success:NO];
 			return;
 		}
-		else if (usingLanguageBoundaries && [highlightedString length] > 0 &&
-				 [highlightedString attribute:HighlightLanguageStart atIndex:0 effectiveRange:nil] == nil)
+		else if (usingLanguageBoundaries && [highlightedString length] > 0
+				 && [highlightedString attribute:HighlightLanguageStart atIndex:0 effectiveRange:nil] == nil
+				 && language != _language)
 		{
 			// This is useful for the automatic language hinting system in case the highlighted text
 			// container some malformation. When this happens, highlight.js will not insert any language span
