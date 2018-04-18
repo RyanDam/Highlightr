@@ -113,9 +113,11 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 - (void)setupListeners
 {
+	NSTextStorage __weak *stringStorage = _stringStorage;
+	
 	[[self highlightr] setThemeChanged:^(Theme *theme)
 	{
-		[self highlightRange:NSMakeRange(0, [_stringStorage length])];
+		[self highlightRange:NSMakeRange(0, [stringStorage length])];
 	}];
 }
 
@@ -192,12 +194,21 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	}
 
 	NSString *string = [_stringStorage string];
+	NSString *configuredLanguage = _language != nil ? _language : @"";
+	
+	Highlightr __weak *highlightr = _highlightr;
+	NSTextStorage __weak *stringStorage = _stringStorage;
 
 	dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-
 		NSRange highlightRange;
-		NSString *language = _language != nil ? _language : @"";
+		NSString *language = configuredLanguage;
 		BOOL usingLanguageBoundaries = NO;
+		
+		if (!highlightr || !stringStorage)
+		{
+			// nil checking
+			return;
+		}
 
 		if (NSEqualRanges(range, NSMakeRange(0, [string length])))
 		{
@@ -223,7 +234,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 		}
 
 		NSString *line = [string substringWithRange:highlightRange];
-		NSMutableAttributedString *highlightedString = [_highlightr highlight:line as:language fastRender:YES];
+		NSMutableAttributedString *highlightedString = [highlightr highlight:line as:language fastRender:YES];
 
 		if (highlightedString == nil)
 		{
@@ -232,7 +243,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 		}
 		else if (usingLanguageBoundaries && [highlightedString length] > 0
 				 && [highlightedString attribute:HighlightLanguageStart atIndex:0 effectiveRange:nil] == nil
-				 && language != _language)
+				 && language != configuredLanguage)
 		{
 			// This is useful for the automatic language hinting system in case the highlighted text
 			// container some malformation. When this happens, highlight.js will not insert any language span
@@ -244,19 +255,19 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 		dispatch_async(dispatch_get_main_queue(), ^{
 			// Checks if this highlighting is still valid.
-			if (NSMaxRange(highlightRange) > [_stringStorage length])
+			if (NSMaxRange(highlightRange) > [stringStorage length])
 			{
 				[self sendDelegateMethodDidHighlightRange:range success:NO];
 				return;
 			}
 
-			if (![highlightedString.string isEqualToString:[[_stringStorage attributedSubstringFromRange:highlightRange] string]])
+			if (![highlightedString.string isEqualToString:[[stringStorage attributedSubstringFromRange:highlightRange] string]])
 			{
 				[self sendDelegateMethodDidHighlightRange:range success:NO];
 				return;
 			}
 
-			[_stringStorage replaceCharactersInRange:highlightRange withAttributedString:highlightedString];
+			[stringStorage replaceCharactersInRange:highlightRange withAttributedString:highlightedString];
 			[self edited:NSTextStorageEditedAttributes range:highlightRange changeInLength:0];
 
 			[self sendDelegateMethodDidHighlightRange:range success:YES];
@@ -268,8 +279,10 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 {
 	if (_highlightDelegate && [_highlightDelegate respondsToSelector:@selector(didHighlightRange:success:)])
 	{
+		NSObject<HighlightDelegate> __weak *delegate = _highlightDelegate;
+		
 		dispatch_async(dispatch_get_main_queue(), ^{
-			[_highlightDelegate didHighlightRange:range success:success];
+			[delegate didHighlightRange:range success:success];
 		});
 	}
 }
