@@ -87,13 +87,32 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 	if (_language && ([self editedMask] & NSTextStorageEditedCharacters))
 	{
-		[self highlightRange:[self editedRange]];
+		[self setNeedsHighlightInRange:[self editedRange]];
 	}
 }
 
 - (void)setNeedsHighlight
 {
-	[self highlightRange:NSMakeRange(0, [self length])];
+	[self setNeedsHighlightInRange:NSMakeRange(0, [self length])];
+}
+
+- (void)setNeedsHighlightInRange:(NSRange)range
+{
+	static NSValue *previousNeedHighlightRangeValue = nil;
+
+	// If we have just called needsHighlight on another range, cancel that request before placing a new one:
+	if (previousNeedHighlightRangeValue != nil)
+	{
+		[NSObject cancelPreviousPerformRequestsWithTarget:self
+												 selector:@selector(highlightRangeValue:)
+												   object:previousNeedHighlightRangeValue];
+	}
+
+	// Store the last range where highlight was requested:
+	previousNeedHighlightRangeValue = [NSValue valueWithRange:range];
+
+	// Request highlight after a small delay:
+	[self performSelector:@selector(highlightRangeValue:) withObject:previousNeedHighlightRangeValue afterDelay:0.1];
 }
 
 #pragma mark - Accessors
@@ -101,7 +120,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 - (void)setLanguage:(NSString *)language
 {
 	_language = language;
-	[self highlightRange:NSMakeRange(0, [_stringStorage length])];
+	[self setNeedsHighlightInRange:NSMakeRange(0, [_stringStorage length])];
 }
 
 - (NSString *)language
@@ -117,7 +136,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	
 	[[self highlightr] setThemeChanged:^(Theme *theme)
 	{
-		[self highlightRange:NSMakeRange(0, [stringStorage length])];
+		[self setNeedsHighlightInRange:NSMakeRange(0, [stringStorage length])];
 	}];
 }
 
@@ -273,6 +292,12 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			[self sendDelegateMethodDidHighlightRange:range success:YES];
 		});
 	});
+}
+
+/// Private helper method so that `highlightRange:` can be invoked using `performSelector`.
+- (void)highlightRangeValue:(NSValue *)value
+{
+	[self highlightRange:[value rangeValue]];
 }
 
 - (void)sendDelegateMethodDidHighlightRange:(NSRange)range success:(BOOL)success
