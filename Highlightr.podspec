@@ -15,11 +15,11 @@ Pod::Spec.new do |s|
                     Highlightr is an iOS & macOS syntax highlighter built with Swift. It uses highlight.js as it core, supports 166 languages and comes with 77 styles.
                        DESC
 
-  s.homepage         = "http://github.com/raspu/Highlightr"
+  s.homepage         = "http://github.com/brunophilipe/Highlightr"
   s.screenshots     = "http://raw.githubusercontent.com/raspu/Highlightr/master/mix2.gif", "http://raw.githubusercontent.com/raspu/Highlightr/master/coding.gif"
   s.license          = 'MIT'
   s.author           = { "J.P. Illanes" => "jpillaness@gmail.com" }
-  s.source           = { :git => "https://github.com/raspu/Highlightr.git", :tag => s.version.to_s, :submodules => true}
+  s.source           = { :git => "https://github.com/brunophilipe/Highlightr.git", :tag => s.version.to_s, :submodules => true}
 
   s.osx.deployment_target = '10.11'
   s.ios.deployment_target = '8.0'
