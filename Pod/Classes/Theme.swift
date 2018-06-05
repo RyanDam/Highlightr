@@ -23,7 +23,7 @@ import Foundation
 
 #endif
 
-private typealias RPThemeDict = [String:[NSAttributedStringKey:AnyObject]]
+private typealias RPThemeDict = [String:[NSAttributedString.Key:AnyObject]]
 private typealias RPThemeStringDict = [String:[String:String]]
 
 /// Theme parser, can be used to configure the theme parameters.
@@ -124,7 +124,7 @@ open class Theme: NSObject {
         
         if styleList.count > 0
         {
-			var attrs: [NSAttributedStringKey:AnyObject] = [.font: codeFont]
+			var attrs: [NSAttributedString.Key: AnyObject] = [.font: codeFont]
 
 			for style in styleList
             {
@@ -226,7 +226,7 @@ open class Theme: NSObject {
         var returnTheme = RPThemeDict()
         for (className, props) in theme
         {
-            var keyProps = [NSAttributedStringKey:AnyObject]()
+            var keyProps = [NSAttributedString.Key: AnyObject]()
             for (key, prop) in props
             {
                 switch key
@@ -269,7 +269,7 @@ open class Theme: NSObject {
         }
     }
     
-    fileprivate func attributeForCSSKey(_ key: String) -> NSAttributedStringKey
+    fileprivate func attributeForCSSKey(_ key: String) -> NSAttributedString.Key
     {
         switch key {
         case "color":
