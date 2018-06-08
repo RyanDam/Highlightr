@@ -173,6 +173,18 @@ import JavaScriptCore
         let res = jsContext.evaluateScript(command)
         return res!.toArray() as! [String]
     }
+	
+	private enum LanguageUpperBound
+	{
+		// Means the language runs all the way to the end of the text buffer.
+		case toEnd
+		
+		// Means the language runs for a certain length.
+		case length(Int)
+		
+		// Means the upper bound is still being calculated.
+		case undefined
+	}
     
     //Private & Internal
 	fileprivate func processHTMLString(_ string: String, defaultLanguage: String?) -> NSMutableAttributedString
@@ -182,7 +194,14 @@ import JavaScriptCore
         var scannedString: NSString?
         let resultString = NSMutableAttributedString(string: "")
         var propStack = ["hljs"]
-		var languageName: String? = nil
+		var languageStack: [Int: (upperBound: LanguageUpperBound, language: String)] = [:]
+		var needsLanguagePop = false
+		
+		if let language = defaultLanguage
+		{
+			// First we add a default highlight attribute to the entire range.
+			languageStack[0] = (.toEnd, language)
+		}
         
         while !scanner.isAtEnd
         {
@@ -195,22 +214,20 @@ import JavaScriptCore
                 }
             }
             
-            if scannedString != nil && scannedString!.length > 0
+            if let scannedString = scannedString, scannedString.length > 0
 			{
-                let attrScannedString = theme.applyStyleToString(scannedString! as String, styleList: propStack)
-
-				if let language = languageName
-				{
-					// We have detected a span with a language-name class. To aid when highlighting changed text,
-					// we add a custom attribute to the string with the language name.
-					attrScannedString.addAttribute(.HighlightLanguageStart,
-												   value: language, range: NSMakeRange(0, 1))
-
-					// To avoid setting this attribute all over the place, we only add it as soon as we detect it.
-					languageName = nil
-				}
-
+                let attrScannedString = theme.applyStyleToString(scannedString as String, styleList: propStack)
 				resultString.append(attrScannedString)
+				
+				// We found the end of a language range. We need to calculate its length. Language attributes are
+				// cascading, so they end either before or with their "partent" attributes. If the end this makes no
+				// difference, as NSAttributedString only stores different versions of the same attribute in one
+				// dimension (there can be no overlap between attributes of the same key).
+				if needsLanguagePop || ended, let startLocation = languageStack.keys.max()
+				{
+					languageStack[startLocation]?.upperBound = .length(resultString.length - startLocation - 5)
+					needsLanguagePop = false
+				}
 
 				if ended
                 {
@@ -222,7 +239,7 @@ import JavaScriptCore
             
             let string = scanner.string as NSString
             let nextChar = string.substring(with: NSMakeRange(scanner.scanLocation, 1))
-            if(nextChar == "s")
+            if (nextChar == "s")
             {
                 scanner.scanLocation += (spanStart as NSString).length
                 scanner.scanUpTo(spanStartClose, into:&scannedString)
@@ -235,23 +252,19 @@ import JavaScriptCore
 					if !property.hasPrefix("hljs"), property != "undefined"
 					{
 						// If the class name doesn't have the "hsjs" prefix, it is a language name, like "php".
-						languageName = property
+						// We start by pushing the current location and detected language name into the language stack
+						languageStack[resultString.length] = (.undefined, property)
 					}
 				}
             }
-            else if(nextChar == "/")
+            else if (nextChar == "/")
             {
                 scanner.scanLocation += (spanEnd as NSString).length
                 let removed = propStack.removeLast()
 
 				if !removed.hasPrefix("hljs"), removed != "undefined"
 				{
-					// We need to stop the language lookup from getting into the just-closed sub-language block.
-					let previousLanguage = propStack.reversed().first(where: {!$0.hasPrefix("hljs")})
-											?? defaultLanguage
-											?? ""
-					
-					languageName = previousLanguage
+					needsLanguagePop = true
 				}
             }
 			else
@@ -263,6 +276,28 @@ import JavaScriptCore
             
             scannedString = nil
         }
+		
+		// We can now apply the language attributes.
+		for startLocation in languageStack.keys.sorted()
+		{
+			guard let (upperBound, language) = languageStack[startLocation] else
+			{
+				continue
+			}
+			
+			let rangeLength: Int
+			
+			switch upperBound
+			{
+			case .length(let length):
+				rangeLength = length
+			
+			default:
+				rangeLength = resultString.length - startLocation
+			}
+			
+			resultString.applyLanguageAttribute(language: language, range: NSMakeRange(startLocation, rangeLength))
+		}
         
         let results = htmlEscape.matches(in: resultString.string,
                                                options: [.reportCompletion],
@@ -275,13 +310,20 @@ import JavaScriptCore
             if let decodedEntity = HTMLUtils.decode(entity)
             {
                 resultString.replaceCharacters(in: fixedRange, with: String(decodedEntity))
-                locOffset += result.range.length-1;
+                locOffset += result.range.length - 1;
             }
-            
-
         }
 
         return resultString
     }
-    
+}
+
+private extension NSMutableAttributedString
+{
+	func applyLanguageAttribute(language: String, range: NSRange)
+	{
+		// We have detected a span with a language-name class. To aid when highlighting changed text,
+		// we add a custom attribute to the string with the language name.
+		addAttribute(.HighlightLanguageStart, value: language, range: range)
+	}
 }

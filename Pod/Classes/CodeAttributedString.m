@@ -168,17 +168,23 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	 }];
 
 	// Search for the nearest language boundary after the edited range.
-	[_stringStorage enumerateAttribute:HighlightLanguageStart
-							   inRange:NSMakeRange(range.location == 0 ? 0 : NSMaxRange(range) - 1, endLocation - NSMaxRange(range))
-							   options:0
-							usingBlock:^(id  _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
-	 {
-		 if ([value isKindOfClass:[NSString class]])
+	NSUInteger positionAhead = NSMaxRange(range);
+	
+	// If this is false, then we are editing the last char of the text storage.
+	if (positionAhead < endLocation)
+	{
+		[_stringStorage enumerateAttribute:HighlightLanguageStart
+								   inRange:NSMakeRange(positionAhead, endLocation - positionAhead - 1)
+								   options:0
+								usingBlock:^(id  _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
 		 {
-			 endLocation = effectiveRange.location;
-			 *stop = YES;
-		 }
-	 }];
+			 if ([value isKindOfClass:[NSString class]] && ![value isEqualToString:highlightLanguage])
+			 {
+				 endLocation = effectiveRange.location;
+				 *stop = YES;
+			 }
+		 }];
+	}
 
 	*effectiveLangauge = highlightLanguage;
 
@@ -264,12 +270,21 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 				 && [highlightedString attribute:HighlightLanguageStart atIndex:0 effectiveRange:nil] == nil
 				 && language != configuredLanguage)
 		{
-			// This is useful for the automatic language hinting system in case the highlighted text
-			// container some malformation. When this happens, highlight.js will not insert any language span
-			// blocks. In this case, we add a hintting manually. This will stop the highlighting from going
-			// backwards into the previous language section, which is not necessary.
-			// But in case it works, or the language changes, for example, this block will be skipped.
-			[highlightedString addAttribute:HighlightLanguageStart value:language range:NSMakeRange(0, 1)];
+			NSString *effectiveLanguage = language;
+			
+			if (!effectiveLanguage && configuredLanguage)
+			{
+				effectiveLanguage = configuredLanguage;
+				
+				// This is useful for the automatic language hinting system in case the highlighted text
+				// contains some malformation. When this happens, highlight.js will not insert any language span
+				// blocks. In this case, we add a hintting manually. This will stop the highlighting from going
+				// backwards into the previous language section, which is not necessary.
+				// But in case it works, or the language changes, for example, this block will be skipped.
+				[highlightedString addAttribute:HighlightLanguageStart
+										  value:language
+										  range:NSMakeRange(0, [highlightedString length])];
+			}
 		}
 
 		dispatch_async(dispatch_get_main_queue(), ^{
