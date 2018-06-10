@@ -174,9 +174,9 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	if (positionAhead < endLocation)
 	{
 		[_stringStorage enumerateAttribute:HighlightLanguageStart
-								   inRange:NSMakeRange(positionAhead, endLocation - positionAhead - 1)
+								   inRange:NSMakeRange(positionAhead, endLocation - positionAhead)
 								   options:0
-								usingBlock:^(id  _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
+								usingBlock:^(id _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
 		 {
 			 if ([value isKindOfClass:[NSString class]] && ![value isEqualToString:highlightLanguage])
 			 {

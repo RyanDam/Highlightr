@@ -216,18 +216,18 @@ import JavaScriptCore
             
             if let scannedString = scannedString, scannedString.length > 0
 			{
-                let attrScannedString = theme.applyStyleToString(scannedString as String, styleList: propStack)
-				resultString.append(attrScannedString)
-				
 				// We found the end of a language range. We need to calculate its length. Language attributes are
 				// cascading, so they end either before or with their "partent" attributes. If the end this makes no
 				// difference, as NSAttributedString only stores different versions of the same attribute in one
 				// dimension (there can be no overlap between attributes of the same key).
-				if needsLanguagePop || ended, let startLocation = languageStack.keys.max()
+				if needsLanguagePop, let startLocation = languageStack.keys.max()
 				{
-					languageStack[startLocation]?.upperBound = .length(resultString.length - startLocation - 5)
+					languageStack[startLocation]?.upperBound = .length(resultString.length - startLocation)
 					needsLanguagePop = false
 				}
+				
+				let attrScannedString = theme.applyStyleToString(scannedString as String, styleList: propStack)
+				resultString.append(attrScannedString)
 
 				if ended
                 {
