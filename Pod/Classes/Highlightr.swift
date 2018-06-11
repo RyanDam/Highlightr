@@ -191,6 +191,7 @@ import JavaScriptCore
     {
         let scanner = Scanner(string: string)
         scanner.charactersToBeSkipped = nil
+
         var scannedString: NSString?
         let resultString = NSMutableAttributedString(string: "")
         var propStack = ["hljs"]
@@ -318,6 +319,25 @@ import JavaScriptCore
     }
 }
 
+#if SYNTAX_DEBUG
+private var colors = [UIColor.red, .green, .blue, .orange, .yellow, .brown, .purple]
+private var colorIterator: IndexingIterator<[UIColor]>? = nil
+
+var nextDebugColor: UIColor
+{
+	if let color = colorIterator?.next()
+	{
+		return color
+	}
+	else
+	{
+		var iterator = colors.makeIterator()
+		colorIterator = iterator
+		return iterator.next()!
+	}
+}
+#endif
+
 private extension NSMutableAttributedString
 {
 	func applyLanguageAttribute(language: String, range: NSRange)
@@ -325,5 +345,9 @@ private extension NSMutableAttributedString
 		// We have detected a span with a language-name class. To aid when highlighting changed text,
 		// we add a custom attribute to the string with the language name.
 		addAttribute(.HighlightLanguageStart, value: language, range: range)
+		
+		#if SYNTAX_DEBUG
+		addAttribute(.backgroundColor, value: nextDebugColor, range: range)
+		#endif
 	}
 }
