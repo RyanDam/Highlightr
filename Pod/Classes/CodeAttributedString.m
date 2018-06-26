@@ -155,7 +155,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 
 	// Search for the nearest language boundary before the edited range.
 	[_stringStorage enumerateAttribute:HighlightLanguageStart
-							   inRange:NSMakeRange(0, range.location)
+							   inRange:NSMakeRange(0, MIN(range.location, endLocation))
 							   options:NSAttributedStringEnumerationReverse
 							usingBlock:^(id _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
 	 {
