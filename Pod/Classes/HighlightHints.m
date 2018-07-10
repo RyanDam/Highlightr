@@ -6,6 +6,7 @@
 //
 
 #import "HighlightHints.h"
+#import "NSString+RangeBoundsCheck.h"
 
 @implementation HighlightHints
 
@@ -45,6 +46,8 @@
 
 + (NSRange)highlightRangeFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language
 {
+	range = [string boundedRangeFrom:range];
+
 	if (language == nil)
 	{
 		// Fallback

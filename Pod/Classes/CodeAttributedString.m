@@ -8,6 +8,7 @@
 #import "CodeAttributedString.h"
 #import "HighlightHints.h"
 #import <Highlightr/Highlightr-Swift.h>
+#import "NSString+RangeBoundsCheck.h"
 
 const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguageStart";
 
@@ -213,6 +214,9 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 /// pre-processor tags and other markup that breaks highlighting otherwise (such as PHP's <?php ?> tags).
 - (void)highlightRange:(NSRange)range
 {
+	// Bounds check
+	range = [[self string] boundedRangeFrom:range];
+
 	if ([_highlightDelegate respondsToSelector:@selector(shouldHighlightRange:)] && ![_highlightDelegate shouldHighlightRange:range])
 	{
 		return;
