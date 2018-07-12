@@ -13,7 +13,7 @@
 - (NSRange)boundedRangeFrom:(NSRange)range
 {
 	NSInteger newLocation = MAX(0, range.location);
-	return NSMakeRange(newLocation, newLocation - MIN([self length], NSMaxRange(range)));
+	return NSMakeRange(newLocation, MIN([self length], NSMaxRange(range)) - newLocation);
 }
 
 @end
