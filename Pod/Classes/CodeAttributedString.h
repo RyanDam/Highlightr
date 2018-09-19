@@ -10,6 +10,7 @@
 @class Highlightr;
 
 extern const _Nonnull NSAttributedStringKey HighlightLanguageBlock;
+extern const _Nonnull NSAttributedStringKey HighlightMultiLineElementBlock;
 
 /// Highlighting Delegate
 @protocol HighlightDelegate

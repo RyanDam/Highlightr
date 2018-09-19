@@ -23,6 +23,8 @@ import JavaScriptCore
     
     /// This block will be called every time the theme changes.
     @objc open var themeChanged : ((Theme) -> Void)?
+
+    internal var multilineClasses: [String] = ["hljs-regexp", "hljs-string"]
     
     fileprivate let jsContext : JSContext
     fileprivate let hljs = "window.hljs"
@@ -195,13 +197,15 @@ import JavaScriptCore
         var scannedString: NSString?
         let resultString = NSMutableAttributedString(string: "")
         var propStack = ["hljs"]
-		var languageStack: [Int: (upperBound: LanguageUpperBound, language: String)] = [:]
-		var needsLanguagePop = false
+
+        var languageMap: [Int: (upperBound: LanguageUpperBound, language: String)] = [:]
+        var multilineElementMap: [Int: (upperBound: LanguageUpperBound, className: String)] = [:]
+		var didPopLanguage = false
 		
 		if let language = defaultLanguage
 		{
 			// First we add a default highlight attribute to the entire range.
-			languageStack[0] = (.toEnd, language)
+			languageMap[0] = (.toEnd, language)
 		}
         
         while !scanner.isAtEnd
@@ -217,14 +221,14 @@ import JavaScriptCore
             
             if let scannedString = scannedString, scannedString.length > 0
 			{
-				// We found the end of a language range. We need to calculate its length. Language attributes are
-				// cascading, so they end either before or with their "partent" attributes. If the end this makes no
-				// difference, as NSAttributedString only stores different versions of the same attribute in one
-				// dimension (there can be no overlap between attributes of the same key).
-				if needsLanguagePop, let startLocation = languageStack.keys.max()
+                if didPopLanguage, let startLocation = languageMap.keys.max()
 				{
-					languageStack[startLocation]?.upperBound = .length(resultString.length - startLocation)
-					needsLanguagePop = false
+                    // We found the end of a language range. We need to calculate its length. Language attributes are
+                    // cascading, so they end either before or with their "partent" attributes. In the end this makes
+                    // no difference, as NSAttributedString only stores different versions of the same attribute in one
+                    // dimension (there can be no overlap between attributes of the same key).
+					languageMap[startLocation]?.upperBound = .length(resultString.length - startLocation)
+					didPopLanguage = false
 				}
 				
 				let attrScannedString = theme.applyStyleToString(scannedString as String, styleList: propStack)
@@ -251,11 +255,19 @@ import JavaScriptCore
 				{
 					propStack.append(property)
 
-					if !property.hasPrefix("hljs"), property != "undefined"
+                    if multilineClasses.contains(property)
+                    {
+                        // This property class can be multi-line. We need to prepare to insert a multiline element
+                        // attribute, and start by registering the current location and property class to the
+                        // multi-language map.
+                        multilineElementMap[resultString.length] = (.undefined, property)
+                    }
+					else if !property.hasPrefix("hljs"), property != "undefined"
 					{
 						// If the class name doesn't have the "hsjs" prefix, it is a language name, like "php".
-						// We start by pushing the current location and detected language name into the language stack
-						languageStack[resultString.length] = (.undefined, property)
+						// We need to prepare to insert a language attibute, and begin by registering the current
+                        // location and detected language name into the language map.
+						languageMap[resultString.length] = (.undefined, property)
 					}
 				}
             }
@@ -264,9 +276,32 @@ import JavaScriptCore
                 scanner.scanLocation += (spanEnd as NSString).length
                 let removed = propStack.removeLast()
 
-				if !removed.hasPrefix("hljs"), removed != "undefined"
+                if multilineClasses.contains(removed)
+                {
+                    // We found a closing tag that can be multi-line. We need to prepare to update a multiline element
+                    // element on the multiline element map, and so we set didPopPropertyOfClass with the class name
+                    // that was just popped.
+
+                    // A multi-line class was just popped from the property stack. We need to update its reference in
+                    // the multi-language map.
+                    let reversedKeys = multilineElementMap.keys.reversed()
+
+                    // Find the las registered multi-line element of the same class as the one that was popped.
+                    if let lowerBound = reversedKeys.first(where: { multilineElementMap[$0]?.className == removed })
+                    {
+                        // The lower bound index is also the key in the multi-line map.
+                        multilineElementMap[lowerBound]?.upperBound = .length(resultString.length - lowerBound)
+                    }
+                    else
+                    {
+                        NSLog("Highlightr error: Could not pop multi-line element of class \(removed)")
+                    }
+                }
+                if !removed.hasPrefix("hljs"), removed != "undefined"
 				{
-					needsLanguagePop = true
+                    // If we found a closing tag without the "hsjs" prefix, it is a language name, like "php". We need
+                    // to update a language registration on language map, and so we set didPopLanguage to true.
+					didPopLanguage = true
 				}
             }
 			else
@@ -280,9 +315,9 @@ import JavaScriptCore
         }
 		
 		// We can now apply the language attributes.
-		for startLocation in languageStack.keys.sorted()
+		for lowerBound in languageMap.keys.sorted()
 		{
-			guard let (upperBound, language) = languageStack[startLocation] else
+			guard let (upperBound, language) = languageMap[lowerBound] else
 			{
 				continue
 			}
@@ -295,15 +330,42 @@ import JavaScriptCore
 				rangeLength = length
 			
 			default:
-				rangeLength = resultString.length - startLocation
+				rangeLength = resultString.length - lowerBound
 			}
-			
-			resultString.applyLanguageAttribute(language: language, range: NSMakeRange(startLocation, rangeLength))
+
+            // We have detected a span with a language-name class. To aid when highlighting changed text,
+            // we add a custom attribute to the string with the language name.
+			resultString.applyLanguageAttribute(language: language, range: NSMakeRange(lowerBound, rangeLength))
 		}
+
+        // We can now apply the multi-line attributes.
+        for lowerBound in multilineElementMap.keys.sorted()
+        {
+            guard let (upperBound, className) = multilineElementMap[lowerBound] else
+            {
+                continue
+            }
+
+            let rangeLength: Int
+
+            switch upperBound
+            {
+            case .length(let length):
+                rangeLength = length
+
+            default:
+                rangeLength = resultString.length - lowerBound
+            }
+
+            resultString.addAttribute(.HighlightMultiLineElementBlock,
+                                      value: className,
+                                      range: NSMakeRange(lowerBound, rangeLength))
+        }
         
         let results = htmlEscape.matches(in: resultString.string,
                                                options: [.reportCompletion],
                                                range: NSMakeRange(0, resultString.length))
+
         var locOffset = 0
         for result in results
         {
@@ -343,8 +405,6 @@ private extension NSMutableAttributedString
 {
 	func applyLanguageAttribute(language: String, range: NSRange)
 	{
-		// We have detected a span with a language-name class. To aid when highlighting changed text,
-		// we add a custom attribute to the string with the language name.
 		addAttribute(.HighlightLanguageBlock, value: language, range: range)
 		
 		#if SYNTAX_DEBUG

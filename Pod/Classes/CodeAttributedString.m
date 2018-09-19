@@ -11,6 +11,7 @@
 #import "NSString+RangeHelpers.h"
 
 const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"HighlightLanguageBlock";
+const _Nonnull NSAttributedStringKey HighlightMultiLineElementBlock = @"MultiLineElementBlock";
 
 @implementation CodeAttributedString
 {
@@ -196,22 +197,69 @@ const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"HighlightLanguag
 	// this file only contains one language.
 	if (NSEqualRanges(boundaryRange, NSMakeRange(0, [string length])))
 	{
-		return [HighlightHints highlightRangeFor:range inString:string forLanguage:[_language lowercaseString]];
+		return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:range]
+										inString:string
+									 forLanguage:[_language lowercaseString]];
 	}
 	else
 	{
-		return boundaryRange;
+		return [self contiguousElementRangeFor:boundaryRange];
 	}
 }
 
-/// Highlights the parameter range.
-///
-/// This method attempts to perform a series of adjustments to the parameter range in order to ensure that the
-/// highlighting generates a correct result. First it attempts to find out if we are inside a sublanguage block,
-/// and uses that information to request highlighting in the correct language.
-///
-/// It also attempts to make sure we always highlight a contiguous language block, since some languages require
-/// pre-processor tags and other markup that breaks highlighting otherwise (such as PHP's <?php ?> tags).
+
+/**
+ Search for HighlightMultiLineElementBlock attributes in the receiver attributed string and return the shortest
+ immediatelly adjacent range that has this attribute set and encompasses the provided range.
+
+ If no such attributes are found immediatelly adjacent to the provided range, returns that range value.
+
+ @param range The search range.
+ @return A contiguous multi-line element range encompassing `range`, or `range` if such attributes are not found.
+ */
+- (NSRange)contiguousElementRangeFor:(NSRange)range
+{
+	NSRange fullRange = NSMakeRange(0, [[self string] length]);
+	NSRange effectiveLowerRange;
+	NSRange effectiveUpperRange;
+
+	id lowerValue = [self attribute:HighlightMultiLineElementBlock atIndex:range.location
+			  longestEffectiveRange:&effectiveLowerRange inRange:fullRange];
+
+	id upperValue = [self attribute:HighlightMultiLineElementBlock atIndex:NSMaxRange(range)
+			  longestEffectiveRange:&effectiveUpperRange inRange:fullRange];
+
+	if (lowerValue != nil && upperValue != nil)
+	{
+		return NSUnionRange(effectiveLowerRange, effectiveUpperRange);
+	}
+	else if (lowerValue != nil)
+	{
+		return NSUnionRange(effectiveLowerRange, range);
+	}
+	else if (upperValue != nil)
+	{
+		return NSUnionRange(range, effectiveUpperRange);
+	}
+	else
+	{
+		return range;
+	}
+}
+
+
+/**
+ Highlights the parameter range.
+
+ This method attempts to perform a series of adjustments to the parameter range in order to ensure that the
+ highlighting generates a correct result. First it attempts to find out if we are inside a sublanguage block,
+ and uses that information to request highlighting in the correct language.
+
+ It also attempts to make sure we always highlight a contiguous language block, since some languages require
+ pre-processor tags and other markup that breaks highlighting otherwise (such as PHP's <?php ?> tags).
+
+ @param range The range to highlight.
+ */
 - (void)highlightRange:(NSRange)range
 {
 	// Bounds check
