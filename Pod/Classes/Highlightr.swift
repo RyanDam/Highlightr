@@ -345,7 +345,7 @@ private extension NSMutableAttributedString
 	{
 		// We have detected a span with a language-name class. To aid when highlighting changed text,
 		// we add a custom attribute to the string with the language name.
-		addAttribute(.HighlightLanguageStart, value: language, range: range)
+		addAttribute(.HighlightLanguageBlock, value: language, range: range)
 		
 		#if SYNTAX_DEBUG
 		addAttribute(.backgroundColor, value: nextDebugColor, range: range)

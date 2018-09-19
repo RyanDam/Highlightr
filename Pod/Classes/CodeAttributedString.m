@@ -10,7 +10,7 @@
 #import <Highlightr/Highlightr-Swift.h>
 #import "NSString+RangeHelpers.h"
 
-const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguageStart";
+const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"HighlightLanguageBlock";
 
 @implementation CodeAttributedString
 {
@@ -155,7 +155,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	}
 
 	// Search for the nearest language boundary before the edited range.
-	[_stringStorage enumerateAttribute:HighlightLanguageStart
+	[_stringStorage enumerateAttribute:HighlightLanguageBlock
 							   inRange:NSMakeRange(0, MIN(range.location, endLocation))
 							   options:NSAttributedStringEnumerationReverse
 							usingBlock:^(id _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
@@ -174,7 +174,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 	// If this is false, then we are editing the last char of the text storage.
 	if (positionAhead < endLocation)
 	{
-		[_stringStorage enumerateAttribute:HighlightLanguageStart
+		[_stringStorage enumerateAttribute:HighlightLanguageBlock
 								   inRange:NSMakeRange(positionAhead, endLocation - positionAhead)
 								   options:0
 								usingBlock:^(id _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
@@ -271,7 +271,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 			return;
 		}
 		else if (usingLanguageBoundaries && [highlightedString length] > 0
-				 && [highlightedString attribute:HighlightLanguageStart atIndex:0 effectiveRange:nil] == nil
+				 && [highlightedString attribute:HighlightLanguageBlock atIndex:0 effectiveRange:nil] == nil
 				 && language != configuredLanguage)
 		{
 			NSString *effectiveLanguage = language;
@@ -285,7 +285,7 @@ const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguag
 				// blocks. In this case, we add a hintting manually. This will stop the highlighting from going
 				// backwards into the previous language section, which is not necessary.
 				// But in case it works, or the language changes, for example, this block will be skipped.
-				[highlightedString addAttribute:HighlightLanguageStart
+				[highlightedString addAttribute:HighlightLanguageBlock
 										  value:language
 										  range:NSMakeRange(0, [highlightedString length])];
 			}

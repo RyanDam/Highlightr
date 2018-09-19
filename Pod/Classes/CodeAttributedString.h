@@ -9,7 +9,7 @@
 
 @class Highlightr;
 
-extern const _Nonnull NSAttributedStringKey HighlightLanguageStart;
+extern const _Nonnull NSAttributedStringKey HighlightLanguageBlock;
 
 /// Highlighting Delegate
 @protocol HighlightDelegate
