@@ -239,7 +239,8 @@ import JavaScriptCore
             scanner.scanLocation += 1
             
             let string = scanner.string as NSString
-            let nextChar = string.substring(with: NSMakeRange(scanner.scanLocation, 1))
+            let nextCharRange = string.rangeOfComposedCharacterSequence(at: UInt(scanner.scanLocation), count: 1)
+            let nextChar = string.substring(with: nextCharRange);
             if (nextChar == "s")
             {
                 scanner.scanLocation += (spanStart as NSString).length

@@ -6,7 +6,7 @@
 //
 
 #import "HighlightHints.h"
-#import "NSString+RangeBoundsCheck.h"
+#import "NSString+RangeHelpers.h"
 
 @implementation HighlightHints
 
@@ -59,15 +59,16 @@
 
 	if (lowerBound != NSNotFound && upperBound != NSNotFound)
 	{
-		return NSUnionRange(NSMakeRange(lowerBound, 1), NSMakeRange(upperBound, 1));
+		return NSUnionRange([string rangeOfComposedCharacterSequenceAtIndex:lowerBound count:1],
+							[string rangeOfComposedCharacterSequenceAtIndex:upperBound count:1]);
 	}
 	else if (lowerBound != NSNotFound)
 	{
-		return NSUnionRange(NSMakeRange(lowerBound, 1), range);
+		return NSUnionRange([string rangeOfComposedCharacterSequenceAtIndex:lowerBound count:1], range);
 	}
 	else if (upperBound != NSNotFound)
 	{
-		return NSUnionRange(range, NSMakeRange(upperBound, 1));
+		return NSUnionRange(range, [string rangeOfComposedCharacterSequenceAtIndex:upperBound count:1]);
 	}
 	else
 	{

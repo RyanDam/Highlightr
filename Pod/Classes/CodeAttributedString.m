@@ -8,7 +8,7 @@
 #import "CodeAttributedString.h"
 #import "HighlightHints.h"
 #import <Highlightr/Highlightr-Swift.h>
-#import "NSString+RangeBoundsCheck.h"
+#import "NSString+RangeHelpers.h"
 
 const _Nonnull NSAttributedStringKey HighlightLanguageStart = @"HighlightLanguageStart";
 
