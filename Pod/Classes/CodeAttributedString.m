@@ -236,16 +236,22 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
  */
 - (NSRange)contiguousElementRangeFor:(NSRange)range
 {
-	NSRange effectiveLowerRange;
-	NSRange effectiveUpperRange;
+	NSRange effectiveLowerRange, effectiveUpperRange;
+	id lowerValue = nil, upperValue = nil;
 
-	id lowerValue = [self attribute:HighlightMultiLineElementBlock
-							atIndex:range.location
-					 effectiveRange:&effectiveLowerRange];
+	if (range.location < [_stringStorage length])
+	{
+		lowerValue = [self attribute:HighlightMultiLineElementBlock
+							 atIndex:range.location
+					  effectiveRange:&effectiveLowerRange];
+	}
 
-	id upperValue = [self attribute:HighlightMultiLineElementBlock
-							atIndex:MIN(NSMaxRange(range), [_stringStorage length] - 1)
-					 effectiveRange:&effectiveUpperRange];
+	if (NSMaxRange(range) < [_stringStorage length])
+	{
+		upperValue = [self attribute:HighlightMultiLineElementBlock
+							 atIndex:NSMaxRange(range)
+					  effectiveRange:&effectiveUpperRange];
+	}
 
 	if (lowerValue != nil && upperValue != nil)
 	{
