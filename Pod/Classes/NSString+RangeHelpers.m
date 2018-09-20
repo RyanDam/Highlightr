@@ -16,7 +16,7 @@
 	return NSMakeRange(newLocation, MIN([self length], NSMaxRange(range)) - newLocation);
 }
 
-- (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSUInteger)count
+- (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSInteger)count
 {
 	NSUInteger startIndex = [self rangeOfComposedCharacterSequenceAtIndex:location].location;
 
@@ -26,23 +26,48 @@
 		return NSMakeRange(NSNotFound, 0);
 	}
 
+	if (count == 0)
+	{
+		return NSMakeRange(startIndex, 0);
+	}
+
 	__block NSUInteger totalLength = 0;
-	__block NSUInteger composedCharsCount = 0;
+	__block NSInteger composedCharsCount = 0;
 
-	[self enumerateSubstringsInRange:NSMakeRange(startIndex, [self length] - startIndex)
-							 options:NSStringEnumerationByComposedCharacterSequences
-						  usingBlock:^(NSString * _Nullable substring, NSRange substringRange, NSRange enclosingRange, BOOL * _Nonnull stop)
-		{
-			totalLength += substringRange.length;
-			composedCharsCount += 1;
+	if (count > 0)
+	{
+		[self enumerateSubstringsInRange:NSMakeRange(startIndex, [self length] - startIndex)
+								 options:NSStringEnumerationByComposedCharacterSequences
+							  usingBlock:^(NSString * _Nullable substring, NSRange substringRange, NSRange enclosingRange, BOOL * _Nonnull stop)
+		 {
+			 totalLength += substringRange.length;
+			 composedCharsCount += 1;
 
-			if (composedCharsCount >= count)
-			{
-				*stop = YES;
-			}
-		}];
+			 if (composedCharsCount >= count)
+			 {
+				 *stop = YES;
+			 }
+		 }];
 
-	return NSMakeRange(startIndex, totalLength);
+		return NSMakeRange(startIndex, totalLength);
+	}
+	else
+	{
+		[self enumerateSubstringsInRange:NSMakeRange(startIndex, [self length] - startIndex)
+								 options:NSStringEnumerationByComposedCharacterSequences|NSStringEnumerationReverse
+							  usingBlock:^(NSString * _Nullable substring, NSRange substringRange, NSRange enclosingRange, BOOL * _Nonnull stop)
+		 {
+			 totalLength += substringRange.length;
+			 composedCharsCount -= 1;
+
+			 if (composedCharsCount <= count)
+			 {
+				 *stop = YES;
+			 }
+		 }];
+
+		return NSMakeRange(startIndex - totalLength, totalLength);
+	}
 }
 
 @end

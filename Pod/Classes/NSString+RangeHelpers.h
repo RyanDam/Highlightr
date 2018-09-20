@@ -23,7 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///
 /// Note: This method is meant as a UTF-8 safe replacement for NSMakeRange() when that function is used to create fixed
 /// length ranges.
-- (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSUInteger)count;
+///
+/// If a negative value is provided for `count`, the range will be built "backwards", with `location` as upper bound.
+- (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSInteger)count;
 
 @end
 
