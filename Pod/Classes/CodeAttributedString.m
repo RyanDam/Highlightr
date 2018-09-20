@@ -199,24 +199,6 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 	*effectiveLangauge = highlightLanguage;
 
 	return NSMakeRange(startLocation, endLocation - startLocation);
-	/*
-	NSString *string = [_stringStorage string];
-
-	// It makes no sense to re-highlight the whole text. In this case, the paragraph range should work, as it seems
-	// this file only contains one language.
-	if (NSEqualRanges(boundaryRange, NSMakeRange(0, [string length])))
-	{
-		return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:range]
-										inString:string
-									 forLanguage:[_language lowercaseString] isInCommentBlockBoundary:NO];
-	}
-	else
-	{
-		return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:boundaryRange]
-										inString:string
-									 forLanguage:[_language lowercaseString] isInCommentBlockBoundary:NO];
-	}
-	*/
 }
 
 - (BOOL)isRangeInCommentBoundary:(NSRange)range
