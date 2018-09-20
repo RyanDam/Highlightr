@@ -5,9 +5,10 @@
 //  Created by Bruno Philipe on 4/12/17.
 //
 
+#import <Highlightr/Highlightr-Swift.h>
+
 #import "CodeAttributedString.h"
 #import "HighlightHints.h"
-#import <Highlightr/Highlightr-Swift.h>
 #import "NSString+RangeHelpers.h"
 
 const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"HighlightLanguageBlock";
@@ -189,22 +190,11 @@ const _Nonnull NSAttributedStringKey HighlightMultiLineElementBlock = @"MultiLin
 	}
 
 	*effectiveLangauge = highlightLanguage;
-
-	NSRange boundaryRange = NSMakeRange(startLocation, endLocation - startLocation);
 	NSString *string = [_stringStorage string];
 
-	// It makes no sense to re-highlight the whole text. In this case, the paragraph range should work, as it seems
-	// this file only contains one language.
-	if (NSEqualRanges(boundaryRange, NSMakeRange(0, [string length])))
-	{
-		return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:range]
-										inString:string
-									 forLanguage:[_language lowercaseString]];
-	}
-	else
-	{
-		return [self contiguousElementRangeFor:boundaryRange];
-	}
+	return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:range]
+									inString:string
+								 forLanguage:[_language lowercaseString]];
 }
 
 
@@ -219,15 +209,13 @@ const _Nonnull NSAttributedStringKey HighlightMultiLineElementBlock = @"MultiLin
  */
 - (NSRange)contiguousElementRangeFor:(NSRange)range
 {
-	NSRange fullRange = NSMakeRange(0, [[self string] length]);
+
+
 	NSRange effectiveLowerRange;
 	NSRange effectiveUpperRange;
 
-	id lowerValue = [self attribute:HighlightMultiLineElementBlock atIndex:range.location
-			  longestEffectiveRange:&effectiveLowerRange inRange:fullRange];
-
-	id upperValue = [self attribute:HighlightMultiLineElementBlock atIndex:NSMaxRange(range)
-			  longestEffectiveRange:&effectiveUpperRange inRange:fullRange];
+	id lowerValue = [self attribute:HighlightMultiLineElementBlock atIndex:range.location effectiveRange:&effectiveLowerRange];
+	id upperValue = [self attribute:HighlightMultiLineElementBlock atIndex:NSMaxRange(range) effectiveRange:&effectiveUpperRange];
 
 	if (lowerValue != nil && upperValue != nil)
 	{

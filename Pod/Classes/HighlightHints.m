@@ -10,38 +10,23 @@
 
 @implementation HighlightHints
 
-+ (NSUInteger)lowerHighlightBoundaryFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language
++ (nonnull NSSet<NSString *> *)blockCommentLanguages
 {
-	NSRange searchRange = NSMakeRange(0, range.location);
+	static NSSet<NSString *> *languagesSet = nil;
 
-	if ([language isEqualToString:@"css"])
+	if (languagesSet == nil)
 	{
-		// Looks for the curly braces, which define the inner blocks of CSS
-		NSRange curlyBraceRange = [string rangeOfString:@"{"
-												options:NSBackwardsSearch
-												  range:searchRange];
-
-		return curlyBraceRange.location;
+		languagesSet = [[NSSet<NSString *> alloc] initWithObjects:@"actionscript", @"arduino", @"armasm", @"aspectj",
+						@"autohotkey", @"avrasm", @"axapta", @"bnf", @"cal", @"clean", @"cos", @"cpp", @"cs", @"css",
+						@"d", @"dart", @"delphi", @"dts", @"ebnf", @"flix", @"gams", @"gauss", @"gcode", @"glsl", @"go",
+						@"gradle", @"groovy", @"haxe", @"hsp", @"java", @"javascript", @"kotlin", @"lasso", @"less",
+						@"livecodeserver", @"mathematica", @"mel", @"mercury", @"mipsasm", @"n1ql", @"nix", @"nsis",
+						@"objectivec", @"openscad", @"php", @"pony", @"processing", @"prolog", @"qml", @"rsl",
+						@"ruleslanguage", @"scala", @"scss", @"sqf", @"sql", @"stan", @"stata", @"step21", @"stylus",
+						@"swift", @"thrift", @"typescript", @"vala", @"verilog", @"vhdl", @"xl", @"zephir", nil];
 	}
 
-	return NSNotFound;
-}
-
-+ (NSUInteger)upperHighlightBoundaryFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language
-{
-	NSRange searchRange = NSMakeRange(NSMaxRange(range), [string length] - NSMaxRange(range));
-
-	if ([language isEqualToString:@"css"])
-	{
-		// Looks for the curly braces, which define the inner blocks of CSS
-		NSRange curlyBraceRange = [string rangeOfString:@"}"
-												options:0
-												  range:searchRange];
-
-		return curlyBraceRange.location;
-	}
-
-	return NSNotFound;
+	return languagesSet;
 }
 
 + (NSRange)highlightRangeFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language
@@ -54,21 +39,66 @@
 		return [string paragraphRangeForRange:range];
 	}
 
-	NSUInteger lowerBound = [self lowerHighlightBoundaryFor:range inString:string forLanguage:language];
-	NSUInteger upperBound = [self upperHighlightBoundaryFor:range inString:string forLanguage:language];
+	NSUInteger lowerBoundary = NSNotFound;
+	NSUInteger upperBoundary = NSNotFound;
 
-	if (lowerBound != NSNotFound && upperBound != NSNotFound)
+	NSRange lowerSearchRange = NSMakeRange(0, range.location);
+	NSRange upperSearchRange = NSMakeRange(NSMaxRange(range), [string length] - NSMaxRange(range));
+
+	BOOL lowerBoundayIsCommentBlock = NO;
+
+	if ([language isEqualToString:@"css"])
 	{
-		return NSUnionRange([string rangeOfComposedCharacterSequenceAtIndex:lowerBound count:1],
-							[string rangeOfComposedCharacterSequenceAtIndex:upperBound count:1]);
+		// Looks for the curly braces, which define the inner blocks of CSS
+		lowerBoundary = [string rangeOfString:@"{" options:NSBackwardsSearch range:lowerSearchRange].location;
 	}
-	else if (lowerBound != NSNotFound)
+	else if ([[self blockCommentLanguages] containsObject:language])
 	{
-		return NSUnionRange([string rangeOfComposedCharacterSequenceAtIndex:lowerBound count:1], range);
+		NSRange offsetRange = NSMakeRange(lowerSearchRange.location, lowerSearchRange.length + range.length);
+		NSUInteger openLocation = [string rangeOfString:@"/*" options:NSBackwardsSearch range:offsetRange].location;
+		NSUInteger closeLocation = NSMaxRange([string rangeOfString:@"*/" options:NSBackwardsSearch range:offsetRange]);
+
+		//  we found open location         but no close location       or the close location is before the open location
+		if (openLocation != NSNotFound && (closeLocation == NSNotFound || openLocation > closeLocation))
+		{
+			// We are inside a comment block so we must include the open tag it in the highlight.
+			lowerBoundary = openLocation;
+			lowerBoundayIsCommentBlock = YES;
+		}
 	}
-	else if (upperBound != NSNotFound)
+
+	if ([language isEqualToString:@"css"])
 	{
-		return NSUnionRange(range, [string rangeOfComposedCharacterSequenceAtIndex:upperBound count:1]);
+		// Looks for the curly braces, which define the inner blocks of CSS
+		upperBoundary = [string rangeOfString:@"}" options:0 range:upperSearchRange].location;
+	}
+	else if ([[self blockCommentLanguages] containsObject:language])
+	{
+		NSUInteger openLocation = [string rangeOfString:@"/*" options:0 range:upperSearchRange].location;
+		NSUInteger closeLocation = NSMaxRange([string rangeOfString:@"*/" options:0 range:upperSearchRange]);
+
+		if (openLocation != NSNotFound && closeLocation != NSNotFound && openLocation > closeLocation)
+		{
+			// We found out that we are inside a comment block so we must include the close tag it in the highlight.
+			upperBoundary = closeLocation;
+		}
+		else if (lowerBoundayIsCommentBlock && closeLocation == NSNotFound)
+		{
+			upperBoundary = [string length];
+		}
+	}
+
+	if (lowerBoundary != NSNotFound && upperBoundary != NSNotFound)
+	{
+		return NSMakeRange(lowerBoundary, upperBoundary - lowerBoundary);
+	}
+	else if (lowerBoundary != NSNotFound)
+	{
+		return NSMakeRange(lowerBoundary, NSMaxRange(range) - lowerBoundary);
+	}
+	else if (upperBoundary != NSNotFound)
+	{
+		return NSMakeRange(range.location, upperBoundary - range.location);
 	}
 	else
 	{
