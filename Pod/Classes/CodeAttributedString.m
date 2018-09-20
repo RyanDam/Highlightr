@@ -11,8 +11,9 @@
 #import "HighlightHints.h"
 #import "NSString+RangeHelpers.h"
 
-const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"HighlightLanguageBlock";
+const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"LanguageBlock";
 const _Nonnull NSAttributedStringKey HighlightMultiLineElementBlock = @"MultiLineElementBlock";
+const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 
 @implementation CodeAttributedString
 {
