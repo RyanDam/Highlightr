@@ -136,6 +136,12 @@ open class Theme: NSObject {
                         attrs.updateValue(attrValue, forKey: attrName)
                     }
                 }
+
+				if style.hasSuffix("comment")
+				{
+					// If this is a comment string, add the comment attribute as well.
+					attrs.updateValue("comment" as AnyObject, forKey: .HighlightCommentBlock)
+				}
             }
             
             returnString = NSMutableAttributedString(string: string, attributes:attrs)
