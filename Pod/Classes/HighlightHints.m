@@ -29,7 +29,10 @@
 	return languagesSet;
 }
 
-+ (NSRange)highlightRangeFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language
++ (NSRange)highlightRangeFor:(NSRange)range
+					inString:(nonnull NSString *)string
+				 forLanguage:(nullable NSString *)language
+	isInCommentBlockBoundary:(BOOL)isCommentBlockBoundary
 {
 	range = [string boundedRangeFrom:range];
 
@@ -54,9 +57,18 @@
 	}
 	else if ([[self blockCommentLanguages] containsObject:language])
 	{
-		NSRange offsetRange = NSMakeRange(lowerSearchRange.location, lowerSearchRange.length + range.length);
-		NSUInteger openLocation = [string rangeOfString:@"/*" options:NSBackwardsSearch range:offsetRange].location;
-		NSUInteger closeLocation = NSMaxRange([string rangeOfString:@"*/" options:NSBackwardsSearch range:offsetRange]);
+		if (NSMaxRange(lowerSearchRange) < [string length])
+		{
+			lowerSearchRange.length += 1;
+		}
+
+		NSRange lineRange = [string lineRangeForRange:lowerSearchRange];
+
+		NSUInteger openLocation = [string rangeOfString:@"(^|[^/])/\\*"
+												options:NSBackwardsSearch|NSRegularExpressionSearch
+												  range:lineRange].location;
+
+		NSUInteger closeLocation = NSMaxRange([string rangeOfString:@"*/" options:NSBackwardsSearch range:lineRange]);
 
 		//  we found open location         but no close location       or the close location is before the open location
 		if (openLocation != NSNotFound && (closeLocation == NSNotFound || openLocation > closeLocation))
@@ -64,6 +76,12 @@
 			// We are inside a comment block so we must include the open tag it in the highlight.
 			lowerBoundary = openLocation;
 			lowerBoundayIsCommentBlock = YES;
+		}
+		else if (isCommentBlockBoundary)
+		{
+			// It is likely the user has deleted a comment block started statement. We might need to highlight
+			// everything down from here.
+			lowerBoundary = [string lineRangeForRange:range].location;
 		}
 	}
 
@@ -82,7 +100,7 @@
 			// We found out that we are inside a comment block so we must include the close tag it in the highlight.
 			upperBoundary = closeLocation;
 		}
-		else if (lowerBoundayIsCommentBlock && closeLocation == NSNotFound)
+		else if ((lowerBoundayIsCommentBlock || isCommentBlockBoundary) && closeLocation == NSNotFound)
 		{
 			upperBoundary = [string length];
 		}
@@ -102,8 +120,7 @@
 	}
 	else
 	{
-		// Fallback
-		return [string paragraphRangeForRange:range];
+		return NSMakeRange(NSNotFound, 0);
 	}
 }
 

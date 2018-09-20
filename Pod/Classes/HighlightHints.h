@@ -19,6 +19,6 @@
  @param language The name of the source languge. For example, "css".
  @return A valid highlight range containing at least the paragraph range of `range`.
  */
-+ (NSRange)highlightRangeFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language;
++ (NSRange)highlightRangeFor:(NSRange)range inString:(nonnull NSString *)string forLanguage:(nullable NSString *)language isInCommentBlockBoundary:(BOOL)isCommentBlockBoundary;
 
 @end
