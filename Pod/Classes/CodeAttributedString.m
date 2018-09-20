@@ -237,10 +237,10 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 		upperIndex = [[_stringStorage string] rangeOfComposedCharacterSequenceAtIndex:upperIndex count:1].location;
 	}
 
-	id lowerCommentValue = [self attribute:HighlightCommentBlock atIndex:lowerIndex effectiveRange:nil];
-	id upperCommentValue = [self attribute:HighlightCommentBlock atIndex:upperIndex effectiveRange:nil];
+	id lowerAttribute = [self attribute:HighlightCommentBlock atIndex:lowerIndex effectiveRange:nil];
+	id upperAttribute = upperIndex < [self length] ? [self attribute:HighlightCommentBlock atIndex:upperIndex effectiveRange:nil] : nil;
 
-	return lowerCommentValue == nil && upperCommentValue != nil;
+	return (lowerAttribute == nil && upperAttribute != nil) || (lowerAttribute != nil && upperAttribute == nil);
 }
 
 /**
