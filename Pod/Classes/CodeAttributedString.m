@@ -148,8 +148,9 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 /// will generate a meaningful result.
 - (NSRange)languageBoundariesForRange:(NSRange)range effectiveLanguage:(NSString **)effectiveLangauge
 {
-	NSInteger __block startLocation = 0;
-	NSInteger __block endLocation = [_stringStorage length];
+	NSUInteger storageLength = [_stringStorage length];
+	NSInteger __block startLocation = NSNotFound;
+	NSInteger __block endLocation = storageLength;
 	NSString __block *highlightLanguage = [self language];
 
 	if (!highlightLanguage)
@@ -175,10 +176,10 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 	NSUInteger positionAhead = NSMaxRange(range);
 	
 	// If this is false, then we are editing the last char of the text storage.
-	if (positionAhead < endLocation)
+	if (positionAhead < storageLength)
 	{
 		[_stringStorage enumerateAttribute:HighlightLanguageBlock
-								   inRange:NSMakeRange(positionAhead, endLocation - positionAhead)
+								   inRange:NSMakeRange(positionAhead, storageLength - positionAhead)
 								   options:0
 								usingBlock:^(id _Nullable value, NSRange effectiveRange, BOOL * _Nonnull stop)
 		 {
@@ -190,14 +191,57 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 		 }];
 	}
 
+	if (startLocation == NSNotFound)
+	{
+		return NSMakeRange(NSNotFound, 0);
+	}
+
 	*effectiveLangauge = highlightLanguage;
+
+	return NSMakeRange(startLocation, endLocation - startLocation);
+	/*
 	NSString *string = [_stringStorage string];
 
-	return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:range]
-									inString:string
-								 forLanguage:[_language lowercaseString]];
+	// It makes no sense to re-highlight the whole text. In this case, the paragraph range should work, as it seems
+	// this file only contains one language.
+	if (NSEqualRanges(boundaryRange, NSMakeRange(0, [string length])))
+	{
+		return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:range]
+										inString:string
+									 forLanguage:[_language lowercaseString] isInCommentBlockBoundary:NO];
+	}
+	else
+	{
+		return [HighlightHints highlightRangeFor:[self contiguousElementRangeFor:boundaryRange]
+										inString:string
+									 forLanguage:[_language lowercaseString] isInCommentBlockBoundary:NO];
+	}
+	*/
 }
 
+- (BOOL)isRangeInCommentBoundary:(NSRange)range
+{
+	NSRange lineRange = [[_stringStorage string] lineRangeForRange:range];
+	NSUInteger lowerIndex = [[_stringStorage string] rangeOfComposedCharacterSequenceAtIndex:lineRange.location count:-1].location;
+	NSUInteger upperIndex = [[_stringStorage string] rangeOfComposedCharacterSequenceAtIndex:NSMaxRange(lineRange) count:1].location;
+
+	if (lineRange.location == lowerIndex && lowerIndex > 0)
+	{
+		// The line range won't do in this case, we will need to look up on the previous line.
+		lowerIndex = [[_stringStorage string] rangeOfComposedCharacterSequenceAtIndex:lowerIndex count:-1].location;
+	}
+
+	if (upperIndex == NSMaxRange(lineRange) && upperIndex < [_stringStorage length])
+	{
+		// The max line range won't do, we will have to lookup on the next line.
+		upperIndex = [[_stringStorage string] rangeOfComposedCharacterSequenceAtIndex:upperIndex count:1].location;
+	}
+
+	id lowerCommentValue = [self attribute:HighlightCommentBlock atIndex:lowerIndex effectiveRange:nil];
+	id upperCommentValue = [self attribute:HighlightCommentBlock atIndex:upperIndex effectiveRange:nil];
+
+	return lowerCommentValue == nil && upperCommentValue != nil;
+}
 
 /**
  Search for HighlightMultiLineElementBlock attributes in the receiver attributed string and return the shortest
@@ -210,13 +254,16 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
  */
 - (NSRange)contiguousElementRangeFor:(NSRange)range
 {
-
-
 	NSRange effectiveLowerRange;
 	NSRange effectiveUpperRange;
 
-	id lowerValue = [self attribute:HighlightMultiLineElementBlock atIndex:range.location effectiveRange:&effectiveLowerRange];
-	id upperValue = [self attribute:HighlightMultiLineElementBlock atIndex:NSMaxRange(range) effectiveRange:&effectiveUpperRange];
+	id lowerValue = [self attribute:HighlightMultiLineElementBlock
+							atIndex:range.location
+					 effectiveRange:&effectiveLowerRange];
+
+	id upperValue = [self attribute:HighlightMultiLineElementBlock
+							atIndex:MIN(NSMaxRange(range), [_stringStorage length] - 1)
+					 effectiveRange:&effectiveUpperRange];
 
 	if (lowerValue != nil && upperValue != nil)
 	{
@@ -235,7 +282,6 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 		return range;
 	}
 }
-
 
 /**
  Highlights the parameter range.
@@ -267,6 +313,7 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 
 	dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
 		NSRange highlightRange;
+		NSRange fullRange = NSMakeRange(0, [string length]);
 		NSString *language = configuredLanguage;
 		BOOL usingLanguageBoundaries = NO;
 		
@@ -276,14 +323,40 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 			return;
 		}
 
-		if (NSEqualRanges(range, NSMakeRange(0, [string length])))
+		if (NSEqualRanges(range, fullRange))
 		{
 			highlightRange = range;
 		}
 		else
 		{
-			highlightRange = [self languageBoundariesForRange:range effectiveLanguage:&language];
-			usingLanguageBoundaries = YES;
+			NSRange languageBounds = [self languageBoundariesForRange:range effectiveLanguage:&language];
+
+			if (languageBounds.location != NSNotFound && !NSEqualRanges(languageBounds, fullRange))
+			{
+				highlightRange = languageBounds;
+				usingLanguageBoundaries = YES;
+			}
+			else
+			{
+				NSRange hintedBounds = [HighlightHints highlightRangeFor:range
+																inString:[stringStorage string]
+															 forLanguage:language
+												isInCommentBlockBoundary:[self isRangeInCommentBoundary:range]];
+
+				if (hintedBounds.location != NSNotFound)
+				{
+					highlightRange = [self contiguousElementRangeFor:hintedBounds];
+				}
+				else
+				{
+					highlightRange = [self contiguousElementRangeFor:range];
+
+					if (NSEqualRanges(highlightRange, range))
+					{
+						highlightRange = [[stringStorage string] lineRangeForRange:range];
+					}
+				}
+			}
 		}
 
 		if (highlightRange.length == 0 || [language isEqualToString:@""])
