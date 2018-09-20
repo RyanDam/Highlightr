@@ -18,6 +18,11 @@
 
 - (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSInteger)count
 {
+	if ([self length] == location || (location == 0 && count < 0))
+	{
+		return NSMakeRange(location, 0);
+	}
+
 	NSUInteger startIndex = [self rangeOfComposedCharacterSequenceAtIndex:location].location;
 
 	if (startIndex == NSNotFound)
