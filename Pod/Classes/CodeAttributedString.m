@@ -219,7 +219,7 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 		upperIndex = [[_stringStorage string] rangeOfComposedCharacterSequenceAtIndex:upperIndex count:1].location;
 	}
 
-	id lowerAttribute = [self attribute:HighlightCommentBlock atIndex:lowerIndex effectiveRange:nil];
+	id lowerAttribute = lowerIndex < [self length] ? [self attribute:HighlightCommentBlock atIndex:lowerIndex effectiveRange:nil] : nil;
 	id upperAttribute = upperIndex < [self length] ? [self attribute:HighlightCommentBlock atIndex:upperIndex effectiveRange:nil] : nil;
 
 	return (lowerAttribute == nil && upperAttribute != nil) || (lowerAttribute != nil && upperAttribute == nil);
