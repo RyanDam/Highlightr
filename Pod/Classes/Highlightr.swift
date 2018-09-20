@@ -186,6 +186,16 @@ import JavaScriptCore
 		
 		// Means the upper bound is still being calculated.
 		case undefined
+
+        var isUndefined: Bool
+        {
+            if case .undefined = self
+            {
+                return true
+            }
+
+            return false
+        }
 	}
     
     //Private & Internal
@@ -287,7 +297,11 @@ import JavaScriptCore
                     let reversedKeys = multilineElementMap.keys.reversed()
 
                     // Find the las registered multi-line element of the same class as the one that was popped.
-                    if let lowerBound = reversedKeys.first(where: { multilineElementMap[$0]?.className == removed })
+                    if let lowerBound = reversedKeys.first(where:
+                        {
+                            multilineElementMap[$0]?.className == removed
+                                && multilineElementMap[$0]?.upperBound.isUndefined == true
+                        })
                     {
                         // The lower bound index is also the key in the multi-line map.
                         multilineElementMap[lowerBound]?.upperBound = .length(resultString.length - lowerBound)
