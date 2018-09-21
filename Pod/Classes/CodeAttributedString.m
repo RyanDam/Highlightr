@@ -236,7 +236,7 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
  */
 - (NSRange)contiguousElementRangeFor:(NSRange)range
 {
-	NSRange effectiveLowerRange, effectiveUpperRange;
+	NSRange effectiveLowerRange = range, effectiveUpperRange = range;
 	id lowerValue = nil, upperValue = nil;
 
 	if (range.location < [_stringStorage length])
