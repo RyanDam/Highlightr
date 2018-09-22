@@ -92,6 +92,11 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 	[self replaceCharactersInRange:range withString:string applyAttributes:YES];
 }
 
+- (void)replaceCharactersInRange:(NSRange)range withAttributedString:(NSAttributedString *)attrString
+{
+	[self replaceCharactersInRange:range withAttributedString:attrString applyAttributes:YES];
+}
+
 - (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)string applyAttributes:(BOOL)applyAttributes
 {
 	if (range.location > 0 && applyAttributes)
@@ -107,6 +112,21 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 	}
 }
 
+- (void)replaceCharactersInRange:(NSRange)range withAttributedString:(NSAttributedString *)string applyAttributes:(BOOL)applyAttributes
+{
+	if (range.location > 0 && applyAttributes)
+	{
+		NSAttributedString *attributedString = [self applyAttributesAtLocation:range.location - 1 toAttributedString:string];
+		[_stringStorage replaceCharactersInRange:range withAttributedString:attributedString];
+		[self edited:NSTextStorageEditedBoth range:range changeInLength:([attributedString length] - range.length)];
+	}
+	else
+	{
+		[_stringStorage replaceCharactersInRange:range withAttributedString:string];
+		[self edited:NSTextStorageEditedBoth range:range changeInLength:([string length] - range.length)];
+	}
+}
+
 - (void)setAttributes:(NSDictionary<NSAttributedStringKey,id> *)attrs range:(NSRange)range
 {
 	[_stringStorage setAttributes:attrs range:range];
@@ -117,6 +137,14 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 {
 	return [[NSAttributedString alloc] initWithString:string
 										   attributes:[_stringStorage attributesAtIndex:location effectiveRange:nil]];
+}
+
+- (NSAttributedString *)applyAttributesAtLocation:(NSUInteger)location toAttributedString:(NSAttributedString *)string
+{
+	NSMutableAttributedString *mutableString = [string mutableCopy];
+	[mutableString setAttributes:[_stringStorage attributesAtIndex:location effectiveRange:nil]
+						   range:NSMakeRange(0, [mutableString length])];
+	return mutableString;
 }
 
 - (void)processEditing

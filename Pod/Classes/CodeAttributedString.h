@@ -48,13 +48,22 @@ extern const _Nonnull NSAttributedStringKey HighlightCommentBlock;
 #pragma mark Advanced String Replacement
 
 /// Replaces the characters and attributes in a given range with the characters of the given string. If
-/// `applyControlAttributes` is `YES`, will read the attributes found at the character immediatelly before
+/// `applyAttributes` is `YES`, will read the attributes found at the character immediatelly before
 /// `range.location` and apply it to the replacement string.
 ///
-/// Notice: Calling the UIKit version of this method (without the `applyControlAttributes` parameter is equivalent
-/// to calling this method with the `applyControlAttributes` parameter set to `YES`).
+/// Notice: Calling the UIKit version of this method (without the `applyAttributes` parameter is equivalent
+/// to calling this method with the `applyAttributes` parameter set to `YES`).
 - (void)replaceCharactersInRange:(NSRange)range
 					  withString:(nonnull NSString *)string
-				 applyAttributes:(BOOL)applyControlAttributes;
+				 applyAttributes:(BOOL)applyAttributes;
 
+/// Replaces the characters and attributes in a given range with the characters and attributes of the given string. If
+/// `applyAttributes` is `YES`, will read the attributes found at the character immediatelly before
+/// `range.location` and apply it to the replacement string.
+///
+/// Notice: Calling the UIKit version of this method (without the `applyAttributes` parameter is equivalent
+/// to calling this method with the `applyAttributes` parameter set to `YES`).
+- (void)replaceCharactersInRange:(NSRange)range
+			withAttributedString:(nonnull NSAttributedString *)string
+				 applyAttributes:(BOOL)applyAttributes;
 @end
