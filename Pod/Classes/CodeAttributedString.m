@@ -15,6 +15,8 @@ const _Nonnull NSAttributedStringKey HighlightLanguageBlock = @"LanguageBlock";
 const _Nonnull NSAttributedStringKey HighlightMultiLineElementBlock = @"MultiLineElementBlock";
 const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 
+#define NSTextStorageEditedBoth (NSTextStorageEditedCharacters|NSTextStorageEditedAttributes)
+
 @implementation CodeAttributedString
 {
 	NSTextStorage *_stringStorage;
@@ -63,6 +65,18 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 	_highlightr = [[Highlightr alloc] init];
 }
 
++ (NSArray<NSAttributedStringKey> *)controlAttributeKeys
+{
+	static NSArray<NSAttributedStringKey> *controlAttributeKeys = nil;
+
+	if (controlAttributeKeys == nil)
+	{
+		controlAttributeKeys = @[HighlightCommentBlock, HighlightLanguageBlock, HighlightMultiLineElementBlock];
+	}
+
+	return controlAttributeKeys;
+}
+
 - (NSString *)string
 {
 	return [_stringStorage string];
@@ -75,14 +89,34 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 
 - (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)string
 {
-	[_stringStorage replaceCharactersInRange:range withString:string];
-	[self edited:NSTextStorageEditedCharacters range:range changeInLength:([string length] - range.length)];
+	[self replaceCharactersInRange:range withString:string applyAttributes:YES];
+}
+
+- (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)string applyAttributes:(BOOL)applyAttributes
+{
+	if (range.location > 0 && applyAttributes)
+	{
+		NSAttributedString *attributedString = [self applyAttributesAtLocation:range.location - 1 toString:string];
+		[_stringStorage replaceCharactersInRange:range withAttributedString:attributedString];
+		[self edited:NSTextStorageEditedBoth range:range changeInLength:([attributedString length] - range.length)];
+	}
+	else
+	{
+		[_stringStorage replaceCharactersInRange:range withString:string];
+		[self edited:NSTextStorageEditedCharacters range:range changeInLength:([string length] - range.length)];
+	}
 }
 
 - (void)setAttributes:(NSDictionary<NSAttributedStringKey,id> *)attrs range:(NSRange)range
 {
 	[_stringStorage setAttributes:attrs range:range];
 	[self edited:NSTextStorageEditedAttributes range:range changeInLength:0];
+}
+
+- (NSAttributedString *)applyAttributesAtLocation:(NSUInteger)location toString:(NSString *)string
+{
+	return [[NSAttributedString alloc] initWithString:string
+										   attributes:[_stringStorage attributesAtIndex:location effectiveRange:nil]];
 }
 
 - (void)processEditing
@@ -337,12 +371,7 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 				}
 				else
 				{
-					highlightRange = [self contiguousElementRangeFor:range];
-
-					if (NSEqualRanges(highlightRange, range))
-					{
-						highlightRange = [[stringStorage string] lineRangeForRange:range];
-					}
+					highlightRange = [self contiguousElementRangeFor:[[stringStorage string] lineRangeForRange:range]];
 				}
 			}
 		}
