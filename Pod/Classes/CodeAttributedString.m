@@ -300,19 +300,36 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 {
 	NSRange effectiveLowerRange = range, effectiveUpperRange = range;
 	id lowerValue = nil, upperValue = nil;
+	NSUInteger rangeUpperBound = NSMaxRange(range);
 
 	if (range.location < [_stringStorage length])
 	{
 		lowerValue = [self attribute:HighlightMultiLineElementBlock
 							 atIndex:range.location
 					  effectiveRange:&effectiveLowerRange];
+
+		if (lowerValue)
+		{
+			lowerValue = [self attribute:HighlightMultiLineElementBlock
+								 atIndex:range.location
+				   longestEffectiveRange:&effectiveLowerRange
+								 inRange:NSMakeRange(0, rangeUpperBound)];
+		}
 	}
 
-	if (NSMaxRange(range) < [_stringStorage length])
+	if (rangeUpperBound < [_stringStorage length])
 	{
 		upperValue = [self attribute:HighlightMultiLineElementBlock
-							 atIndex:NSMaxRange(range)
+							 atIndex:rangeUpperBound
 					  effectiveRange:&effectiveUpperRange];
+
+		if (upperValue)
+		{
+			upperValue = [self attribute:HighlightMultiLineElementBlock
+								 atIndex:rangeUpperBound
+				   longestEffectiveRange:&effectiveUpperRange
+								 inRange:NSMakeRange(rangeUpperBound, [_stringStorage length] - rangeUpperBound)];
+		}
 	}
 
 	if (lowerValue != nil && upperValue != nil)
