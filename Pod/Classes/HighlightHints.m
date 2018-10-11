@@ -63,6 +63,9 @@
 		}
 
 		NSRange lineRange = [string lineRangeForRange:lowerSearchRange];
+		
+		// This is the range that will be highlighted if all hinting fails. We should be aware of it.
+		NSRange fallbackHighlightRange = [string lineRangeForRange:range];
 
 		NSUInteger openLocation = [string rangeOfString:@"(^|[^/])/\\*"
 												options:NSBackwardsSearch|NSRegularExpressionSearch
@@ -70,8 +73,10 @@
 
 		NSUInteger closeLocation = NSMaxRange([string rangeOfString:@"*/" options:NSBackwardsSearch range:lineRange]);
 
-		//  we found open location         but no close location       or the close location is before the open location
-		if (openLocation != NSNotFound && (closeLocation == NSNotFound || openLocation > closeLocation))
+		if (openLocation != NSNotFound //  we found open location
+			&& (closeLocation == NSNotFound // and no close location
+				|| openLocation > closeLocation // or close is before open
+				|| NSLocationInRange(closeLocation - 1, fallbackHighlightRange))) // or close is in fallback highlight range
 		{
 			// We are inside a comment block so we must include the open tag it in the highlight.
 			lowerBoundary = openLocation;
