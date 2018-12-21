@@ -68,7 +68,7 @@ import JavaScriptCore
 
 	/// Attributes that are added to the entire string after parsing. This is a useful place to change
 	/// line height and other global features of the document.
-	@objc open var documentAttributes: [NSAttributedStringKey: Any] = [:]
+	@objc open var documentAttributes: [NSAttributedString.Key: Any] = [:]
     
     /**
      Set the theme to use for highlighting.
