@@ -18,12 +18,17 @@
 
 - (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSInteger)count
 {
-	if ([self length] == location || (location == 0 && count < 0))
+	if (([self length] == location && count >= 0) || (location == 0 && count < 0))
 	{
 		return NSMakeRange(location, 0);
 	}
 
-	NSUInteger startIndex = [self rangeOfComposedCharacterSequenceAtIndex:location].location;
+	NSUInteger startIndex = location;
+	
+	if ([self length] > location)
+	{
+		location = [self rangeOfComposedCharacterSequenceAtIndex:location].location;
+	}
 
 	if (startIndex == NSNotFound)
 	{
@@ -58,7 +63,7 @@
 	}
 	else
 	{
-		[self enumerateSubstringsInRange:NSMakeRange(startIndex, [self length] - startIndex)
+		[self enumerateSubstringsInRange:NSMakeRange(0, location)
 								 options:NSStringEnumerationByComposedCharacterSequences|NSStringEnumerationReverse
 							  usingBlock:^(NSString * _Nullable substring, NSRange substringRange, NSRange enclosingRange, BOOL * _Nonnull stop)
 		 {
