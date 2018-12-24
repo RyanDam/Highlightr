@@ -12,8 +12,15 @@
 
 - (NSRange)boundedRangeFrom:(NSRange)range
 {
-	NSInteger newLocation = MIN(range.location, [self length]);
-	return NSMakeRange(newLocation, MIN([self length], NSMaxRange(range)) - newLocation);
+	if (range.location == NSNotFound)
+	{
+		return NSMakeRange(0, 0);
+	}
+	
+	NSUInteger stringLength = [self length];
+	NSUInteger boundedLocation = MIN(range.location, stringLength);
+	
+	return NSMakeRange(boundedLocation, MIN(stringLength, NSMaxRange(range)) - boundedLocation);
 }
 
 - (NSRange)rangeOfComposedCharacterSequenceAtIndex:(NSUInteger)location count:(NSInteger)count
