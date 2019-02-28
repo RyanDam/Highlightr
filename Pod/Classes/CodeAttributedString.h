@@ -42,6 +42,9 @@ extern const _Nonnull NSAttributedStringKey HighlightCommentBlock;
 /// Automatically updates highlight on text change.
 @property BOOL highlightOnChange;
 
+/// Font to use when inserting text. If set, will override the font present at the insertion point.
+@property (nullable, strong) UIFont *enforcedFont;
+
 /// Informs the code storage that highlighting of the entire contents are necessary.
 - (void)setNeedsHighlight;
 

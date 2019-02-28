@@ -135,15 +135,31 @@ const _Nonnull NSAttributedStringKey HighlightCommentBlock = @"CommentBlock";
 
 - (NSAttributedString *)applyAttributesAtLocation:(NSUInteger)location toString:(NSString *)string
 {
-	return [[NSAttributedString alloc] initWithString:string
-										   attributes:[_stringStorage attributesAtIndex:location effectiveRange:nil]];
+	NSDictionary *attributes = [_stringStorage attributesAtIndex:location effectiveRange:nil];
+
+	if ([self enforcedFont] != nil)
+	{
+		NSMutableDictionary *mutableAttributes = [attributes mutableCopy];
+		[mutableAttributes setObject:[self enforcedFont] forKey:NSFontAttributeName];
+		attributes = mutableAttributes;
+	}
+
+	return [[NSAttributedString alloc] initWithString:string attributes:attributes];
 }
 
 - (NSAttributedString *)applyAttributesAtLocation:(NSUInteger)location toAttributedString:(NSAttributedString *)string
 {
 	NSMutableAttributedString *mutableString = [string mutableCopy];
-	[mutableString setAttributes:[_stringStorage attributesAtIndex:location effectiveRange:nil]
-						   range:NSMakeRange(0, [mutableString length])];
+	NSDictionary *attributes = [_stringStorage attributesAtIndex:location effectiveRange:nil];
+
+	if ([self enforcedFont] != nil)
+	{
+		NSMutableDictionary *mutableAttributes = [attributes mutableCopy];
+		[mutableAttributes setObject:[self enforcedFont] forKey:NSFontAttributeName];
+		attributes = mutableAttributes;
+	}
+
+	[mutableString setAttributes:attributes range:NSMakeRange(0, [mutableString length])];
 	return mutableString;
 }
 
