@@ -98,20 +98,21 @@ open class Theme: NSObject {
 		boldCodeFont = RPFont(descriptor: boldDescriptor, size: font.pointSize)
 		italicCodeFont = RPFont(descriptor: italicDescriptor, size: font.pointSize)
 
-		if(italicCodeFont == nil || italicCodeFont.familyName != font.familyName)
+		if italicCodeFont == nil || italicCodeFont.familyName != font.familyName
 		{
 			italicCodeFont = RPFont(descriptor: obliqueDescriptor, size: font.pointSize)
-		} else if(italicCodeFont == nil )
+		}
+		else if italicCodeFont == nil
 		{
 			italicCodeFont = font
 		}
 
-		if(boldCodeFont == nil)
+		if boldCodeFont == nil
 		{
 			boldCodeFont = font
 		}
 
-		if(themeDict != nil)
+		if themeDict != nil
 		{
 			themeDict = strippedThemeToTheme(strippedTheme)
 		}
@@ -169,13 +170,13 @@ open class Theme: NSObject {
 		var resultDict = [String:[String:String]]()
 
 		for result in results {
-			if(result.numberOfRanges == 3)
+			if result.numberOfRanges == 3
 			{
 				var attributes = [String:String]()
 				let cssPairs = objcString.substring(with: result.range(at: 2)).components(separatedBy: ";")
 				for pair in cssPairs {
 					let cssPropComp = pair.components(separatedBy: ":")
-					if(cssPropComp.count == 2)
+					if cssPropComp.count == 2
 					{
 						attributes[cssPropComp[0]] = cssPropComp[1]
 					}
@@ -220,7 +221,7 @@ open class Theme: NSObject {
 			resultString += key+"{"
 			for (cssProp, val) in props
 			{
-				if(key != ".hljs" || (cssProp.lowercased() != "background-color" && cssProp.lowercased() != "background"))
+				if key != ".hljs" || (cssProp.lowercased() != "background-color" && cssProp.lowercased() != "background")
 				{
 					resultString += "\(cssProp):\(val);"
 				}
@@ -299,7 +300,7 @@ open class Theme: NSObject {
 
 		var cString:String = hex.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
 
-		if (cString.hasPrefix("#"))
+		if cString.hasPrefix("#")
 		{
 			cString = (cString as NSString).substring(from: 1)
 		}
@@ -321,7 +322,7 @@ open class Theme: NSObject {
 			}
 		}
 
-		if (cString.count != 6 && cString.count != 3 )
+		if cString.count != 6 && cString.count != 3
 		{
 			return RPColor.gray
 		}
@@ -330,7 +331,7 @@ open class Theme: NSObject {
 		var r:CUnsignedInt = 0, g:CUnsignedInt = 0, b:CUnsignedInt = 0;
 		var divisor : CGFloat
 
-		if (cString.count == 6 )
+		if cString.count == 6
 		{
 
 			let rString = (cString as NSString).substring(to: 2)

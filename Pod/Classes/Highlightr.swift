@@ -124,7 +124,7 @@ import JavaScriptCore
         }
         
         let returnString : NSMutableAttributedString
-        if (fastRender)
+        if fastRender
         {
             returnString = processHTMLString(string, defaultLanguage: languageName)
         }
@@ -255,7 +255,7 @@ import JavaScriptCore
             let string = scanner.string as NSString
             let nextCharRange = string.rangeOfComposedCharacterSequence(at: UInt(scanner.scanLocation), count: 1)
             let nextChar = string.substring(with: nextCharRange);
-            if (nextChar == "s")
+            if nextChar == "s"
             {
                 scanner.scanLocation += (spanStart as NSString).length
                 scanner.scanUpTo(spanStartClose, into:&scannedString)
@@ -281,7 +281,7 @@ import JavaScriptCore
 					}
 				}
             }
-            else if (nextChar == "/")
+            else if nextChar == "/"
             {
                 scanner.scanLocation += (spanEnd as NSString).length
                 let removed = propStack.removeLast()
