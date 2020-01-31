@@ -335,20 +335,15 @@
 		}
 
 		dispatch_async(dispatch_get_main_queue(), ^{
-			// Checks if this highlighting is still valid.
-			if (NSMaxRange(highlightRange) > [stringStorage length])
-			{
-				[self sendDelegateMethodDidHighlightRange:range success:NO];
-				return;
-			}
-
-			if (![highlightedString.string isEqualToString:[[stringStorage attributedSubstringFromRange:highlightRange] string]])
-			{
-				[self sendDelegateMethodDidHighlightRange:range success:NO];
-				return;
-			}
-
 			NSTextStorage *originalStringStorage = self->_stringStorage;
+
+			// Checks if this highlighting is still valid.
+			if (NSMaxRange(highlightRange) > [originalStringStorage length])
+			{
+				[self sendDelegateMethodDidHighlightRange:range success:NO];
+				return;
+			}
+
 			NSInteger originalRangeHash = [[[originalStringStorage string] substringWithRange:highlightRange] hash];
 			NSInteger highlightedRangeHash = [[highlightedString string] hash];
 
