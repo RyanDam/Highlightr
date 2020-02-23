@@ -18,6 +18,7 @@
 {
 	NSTextStorage *_stringStorage;
 	NSString *_language;
+	NSValue *_aggregateNeedHighlightRangeValue;
 }
 
 - (instancetype)init
@@ -60,6 +61,7 @@
 	// performance enhancement compared to using something like a NSMutableAttributedString.
 	_stringStorage = [[NSTextStorage alloc] initWithString:@""];
 	_highlightr = [[Highlightr alloc] init];
+	_aggregateNeedHighlightRangeValue = nil;
 }
 
 + (NSArray<NSAttributedStringKey> *)controlAttributeKeys
@@ -177,21 +179,25 @@
 
 - (void)setNeedsHighlightInRange:(NSRange)range
 {
-	static NSValue *previousNeedHighlightRangeValue = nil;
-
 	// If we have just called needsHighlight on another range, cancel that request before placing a new one:
-	if (previousNeedHighlightRangeValue != nil)
+	if (_aggregateNeedHighlightRangeValue != nil)
 	{
 		[NSObject cancelPreviousPerformRequestsWithTarget:self
 												 selector:@selector(highlightRangeValue:)
-												   object:previousNeedHighlightRangeValue];
+												   object:_aggregateNeedHighlightRangeValue];
+
+		// Create a union for the total range needing highlight
+		NSRange aggregateRangeValue = _aggregateNeedHighlightRangeValue.rangeValue;
+		_aggregateNeedHighlightRangeValue = [NSValue valueWithRange:NSUnionRange(aggregateRangeValue, range)];
+	}
+	else
+	{
+		// Store the range needing highlight in case a second call comes before the timeout
+		_aggregateNeedHighlightRangeValue = [NSValue valueWithRange:range];
 	}
 
-	// Store the last range where highlight was requested:
-	previousNeedHighlightRangeValue = [NSValue valueWithRange:range];
-
 	// Request highlight after a small delay:
-	[self performSelector:@selector(highlightRangeValue:) withObject:previousNeedHighlightRangeValue afterDelay:0.1];
+	[self performSelector:@selector(highlightRangeValue:) withObject:_aggregateNeedHighlightRangeValue afterDelay:0.2];
 }
 
 #pragma mark - Accessors
@@ -365,6 +371,7 @@
 /// Private helper method so that `highlightRange:` can be invoked using `performSelector`.
 - (void)highlightRangeValue:(NSValue *)value
 {
+	_aggregateNeedHighlightRangeValue = nil;
 	[self highlightRange:[value rangeValue]];
 }
 
