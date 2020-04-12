@@ -8,6 +8,7 @@
 
 import Foundation
 import JavaScriptCore
+import WebKit
 
 /// Utility class for generating a highlighted NSAttributedString from a String.
 @objc open class Highlightr: NSObject
@@ -26,9 +27,9 @@ import JavaScriptCore
 
     internal var multilineClasses: [String] = ["hljs-regexp", "hljs-string"]
     
-    fileprivate let jsContext : JSContext
+    fileprivate let jsEngine: JSEngine
     fileprivate let hljs = "window.hljs"
-    fileprivate let bundle : Bundle
+    fileprivate let bundle: Bundle
     fileprivate let htmlStart = "<"
     fileprivate let spanStart = "span class=\""
     fileprivate let spanStartClose = "\">"
@@ -42,8 +43,8 @@ import JavaScriptCore
      */
 	@objc public override init()
     {
-        jsContext = JSContext()
-        jsContext.evaluateScript("var window = {};")
+        jsEngine = WKWebView()
+		_ = jsEngine.evaluate(command: "var window = {};")
         bundle = Bundle(for: Highlightr.self)
         guard let hgPath = bundle.path(forResource: "highlight.min", ofType: "js") else
         {
@@ -51,8 +52,8 @@ import JavaScriptCore
         }
         
         let hgJs = try! String.init(contentsOfFile: hgPath)
-        let value = jsContext.evaluateScript(hgJs)
-        if !(value?.toBool())!
+        let value = jsEngine.evaluate(command: hgJs)
+        if value == nil
         {
             abort()
         }
@@ -117,8 +118,8 @@ import JavaScriptCore
             command = String.init(format: "%@.highlightAuto(\"%@\").value;", hljs, fixedCode)
         }
         
-        let res = jsContext.evaluateScript(command)
-        guard var string = res!.toString() else
+        let result = jsEngine.evaluate(command: command)
+        guard var string = result else
         {
             return nil
         }
@@ -172,8 +173,8 @@ import JavaScriptCore
     @objc open func supportedLanguages() -> [String]
     {
         let command =  String.init(format: "%@.listLanguages();", hljs)
-        let res = jsContext.evaluateScript(command)
-        return res!.toArray() as! [String]
+        let res = jsEngine.evaluate(command: command)
+		return res?.split(separator: ",").map(String.init) ?? []
     }
 	
 	private enum LanguageUpperBound
