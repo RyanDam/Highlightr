@@ -27,8 +27,10 @@ import JavaScriptCore
     internal var multilineClasses: [String] = ["hljs-regexp", "hljs-string"]
     
     fileprivate let jsContext : JSContext
-    fileprivate let hljs = "window.hljs"
+    fileprivate let hljs: JSValue
+    // fileprivate let hljs = "windosw.hljs"
     fileprivate let bundle : Bundle
+
     fileprivate let htmlStart = "<"
     fileprivate let spanStart = "span class=\""
     fileprivate let spanStartClose = "\">"
@@ -43,7 +45,10 @@ import JavaScriptCore
 	@objc public override init()
     {
         jsContext = JSContext()
-        jsContext.evaluateScript("var window = {};")
+        let window = JSValue(newObjectIn: jsContext)
+        jsContext.setObject(window, forKeyedSubscript: "window" as NSString)
+        // jsContext.evaluateScript("var window = {};")
+
         bundle = Bundle(for: Highlightr.self)
         guard let hgPath = bundle.path(forResource: "highlight.min", ofType: "js") else
         {
@@ -56,6 +61,11 @@ import JavaScriptCore
         {
             abort()
         }
+        guard let hljs = window?.objectForKeyedSubscript("hljs") else
+        {
+            abort()
+        }
+        self.hljs = hljs
 
 		super.init()
 
@@ -106,22 +116,39 @@ import JavaScriptCore
         fixedCode = fixedCode.replacingOccurrences(of: "\n", with:"\\n");
         fixedCode = fixedCode.replacingOccurrences(of: "\r", with:"\\r");
 
-        let command: String
+        // let command: String
+        // if let languageName = languageName
+        // {
+        //     command = String.init(format: "%@.highlight(\"%@\",\"%@\",true).value;", hljs, languageName, fixedCode)
+        // }
+		// else
+        // {
+        //     // language auto detection
+        //     command = String.init(format: "%@.highlightAuto(\"%@\").value;", hljs, fixedCode)
+        // }
+        
+        // let res = jsContext.evaluateScript(command)
+        // guard var string = res!.toString() else
+        // {
+        //     return nil
+        // }
+
+        let ret: JSValue
         if let languageName = languageName
         {
-            command = String.init(format: "%@.highlight(\"%@\",\"%@\",true).value;", hljs, languageName, fixedCode)
-        }
-		else
+            ret = hljs.invokeMethod("highlight", withArguments: [languageName, code, ignoreIllegals])
+        }else
         {
             // language auto detection
-            command = String.init(format: "%@.highlightAuto(\"%@\").value;", hljs, fixedCode)
+            ret = hljs.invokeMethod("highlightAuto", withArguments: [code])
         }
-        
-        let res = jsContext.evaluateScript(command)
+
+        let res = ret.objectForKeyedSubscript("value")
         guard var string = res!.toString() else
         {
             return nil
         }
+
         
         let returnString : NSMutableAttributedString
         if fastRender
@@ -171,8 +198,10 @@ import JavaScriptCore
      */
     @objc open func supportedLanguages() -> [String]
     {
-        let command =  String.init(format: "%@.listLanguages();", hljs)
-        let res = jsContext.evaluateScript(command)
+        // let command =  String.init(format: "%@.listLanguages();", hljs)
+        // let res = jsContext.evaluateScript(command)
+        // return res!.toArray() as! [String]
+        let res = hljs.invokeMethod("listLanguages", withArguments: [])
         return res!.toArray() as! [String]
     }
 	
